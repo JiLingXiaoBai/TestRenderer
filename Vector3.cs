@@ -38,9 +38,9 @@ namespace TestRenderer
             this.x = x; this.y = y; this.z = z;
         }
 
-        public void Set(float newX, float newY, float newZ)
+        public Vector3(Vector3 v)
         {
-            x = newX; y = newY; z = newZ;
+            x = v.x; y = v.y; z = v.z;
         }
 
         //三维向量叉积
