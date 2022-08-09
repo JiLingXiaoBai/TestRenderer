@@ -1,0 +1,17 @@
+D:\TestRenderer\bin\Debug\net6.0-windows\TestRenderer.exe
+D:\TestRenderer\bin\Debug\net6.0-windows\TestRenderer.deps.json
+D:\TestRenderer\bin\Debug\net6.0-windows\TestRenderer.runtimeconfig.json
+D:\TestRenderer\bin\Debug\net6.0-windows\TestRenderer.dll
+D:\TestRenderer\bin\Debug\net6.0-windows\TestRenderer.pdb
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.csproj.AssemblyReference.cache
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.Form1.resources
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.csproj.GenerateResource.cache
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.GeneratedMSBuildEditorConfig.editorconfig
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.AssemblyInfoInputs.cache
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.AssemblyInfo.cs
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.csproj.CoreCompileInputs.cache
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.dll
+D:\TestRenderer\obj\Debug\net6.0-windows\refint\TestRenderer.dll
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.pdb
+D:\TestRenderer\obj\Debug\net6.0-windows\TestRenderer.genruntimeconfig.cache
+D:\TestRenderer\obj\Debug\net6.0-windows\ref\TestRenderer.dll
