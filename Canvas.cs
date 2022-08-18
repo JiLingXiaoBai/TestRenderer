@@ -16,7 +16,7 @@ namespace TestRenderer
         }
 
         //Bresenham算法
-        public void DrawLine(int x0, int y0, int x1, int y1, Bitmap bitmap, Color color)
+        public void DrawLine(int x0, int y0, int x1, int y1, ref Bitmap bitmap, Color color)
         {
             bool steep = false;
             if(Math.Abs(x0 - x1) < Math.Abs(y0 - y1))
