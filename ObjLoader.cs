@@ -8,25 +8,6 @@ namespace TestRenderer
 {
     internal class ObjLoader
     {
-        public class Vertex 
-        {
-            public float X;
-            public float Y;
-            public float Z;
-        };
-
-        public class Texture 
-        {
-            public float TU;
-            public float TV;
-        };
-
-        public class Normal
-        {
-            public float NX;
-            public float NY;
-            public float NZ;
-        };
 
         public class Surface 
         { 
@@ -38,11 +19,11 @@ namespace TestRenderer
         public class Model
         {
             //代表顶点。格式为V X Y Z，V后面的X Y Z表示三个顶点坐标。浮点型
-            public List<Vertex> V = new List<Vertex>();
+            public List<Vector3> Vertex = new List<Vector3>();
             //表示纹理坐标。格式为VT TU TV。浮点型
-            public List<Texture> T = new List<Texture>();
+            public List<Vector2> Texture = new List<Vector2>();
             //法向量。每个三角形的三个顶点都要指定一个法向量。格式为 NX NY NZ。浮点型
-            public List<Normal> N = new List<Normal>();
+            public List<Vector3> Normal = new List<Vector3>();
             //面。面后面跟着的整型值分别是属于这个面的顶点、纹理坐标、法向量的索引。
             public List<Surface> Surfaces = new List<Surface>();
             //面的格式为：f Vertex1/Texture1/Normal1 Vertex2/Texture2/Normal2 Vertex3/Texture3/Normal3
@@ -66,35 +47,35 @@ namespace TestRenderer
                 {
                     if (texLineTem.IndexOf("t") == 1)//vt 0.581151 0.979929 纹理
                     {
-                        string[] tempArray = texLineTem.Split(' ');
-                        Texture vt = new Texture();
-                        vt.TU = float.Parse(tempArray[1]);
-                        vt.TV = float.Parse(tempArray[2]);
-                        mesh.T.Add(vt);
+                        string[] tempArray = texLineTem.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                        Vector2 vt = new Vector2();
+                        vt.x = float.Parse(tempArray[1]);
+                        vt.y = float.Parse(tempArray[2]);
+                        mesh.Texture.Add(vt);
                     }
                     else if (texLineTem.IndexOf("n") == 1)//vn 0.637005 -0.0421857 0.769705 法向量
                     {
                         string[] tempArray = texLineTem.Split(new char[] { '/', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
-                        Normal vn = new Normal();
-                        vn.NX = float.Parse(tempArray[1]);
-                        vn.NY = float.Parse(tempArray[2]);
+                        Vector3 vn = new Vector3();
+                        vn.x = float.Parse(tempArray[1]);
+                        vn.y = float.Parse(tempArray[2]);
                         if (tempArray[3] == "\\")
                         {
                             texLineTem = objReader.ReadLine();
-                            vn.NZ = float.Parse(texLineTem);
+                            vn.z = float.Parse(texLineTem);
                         }
-                        else vn.NZ = float.Parse(tempArray[3]);
+                        else vn.z = float.Parse(tempArray[3]);
 
-                        mesh.N.Add(vn);
+                        mesh.Normal.Add(vn);
                     }
                     else
                     {//v -53.0413 158.84 -135.806 点
-                        string[] tempArray = texLineTem.Split(' ');
-                        Vertex v = new Vertex();
-                        v.X = float.Parse(tempArray[1]);
-                        v.Y = float.Parse(tempArray[2]);
-                        v.Z = float.Parse(tempArray[3]);
-                        mesh.V.Add(v);
+                        string[] tempArray = texLineTem.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                        Vector3 v = new Vector3();
+                        v.x = float.Parse(tempArray[1]);
+                        v.y = float.Parse(tempArray[2]);
+                        v.z = float.Parse(tempArray[3]);
+                        mesh.Vertex.Add(v);
                     }
                 }
                 else if (texLineTem.IndexOf("f") == 0)
@@ -106,17 +87,17 @@ namespace TestRenderer
                     int k = 1;
                     while (i < 3)
                     {
-                        if (mesh.V.Count() != 0)
+                        if (mesh.Vertex.Count() != 0)
                         {
                             surface.Vert[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (mesh.T.Count() != 0)
+                        if (mesh.Texture.Count() != 0)
                         {
                             surface.Tex[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (mesh.N.Count() != 0)
+                        if (mesh.Normal.Count() != 0)
                         {
                             surface.Norm[i] = int.Parse(tempArray[k]) - 1;
                             k++;
