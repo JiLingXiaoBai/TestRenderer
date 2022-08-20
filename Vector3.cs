@@ -8,8 +8,6 @@ namespace TestRenderer
 {
     internal class Vector3
     {
-        public const float kEpsilon = 0.00001f;
-
         public float x, y, z;
 
         public float this[int index]
@@ -100,10 +98,10 @@ namespace TestRenderer
             get { return (float)Math.Sqrt(x * x + y * y + z * z); }
         }
 
-        public static Vector3 Normalize(Vector3 v)
+        public Vector3 Normalize(Vector3 v)
         {
             float mag = Magnitude(v);
-            if (mag > kEpsilon)
+            if (mag > float.Epsilon)
                 return v / mag;
             else
                 return new Vector3(0, 0, 0);

@@ -10,6 +10,29 @@ namespace TestRenderer
     {
         public int x, y;
         public IntVector2() { }
+
+        public int this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return x;
+                    case 1: return y;
+                    default: throw new IndexOutOfRangeException("Invalid IntVector2 index!");
+                }
+            }
+            set
+            {
+                switch (index)
+                {
+                    case 0: x = value; break;
+                    case 1: y = value; break;
+                    default: throw new IndexOutOfRangeException("Invalid IntVector2 index!");
+                }
+            }
+        }
+
         public IntVector2(int x, int y)
         {
             this.x = x; this.y = y;

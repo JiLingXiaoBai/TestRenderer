@@ -83,9 +83,9 @@ namespace TestRenderer
                     //f 2443//2656 2442//2656 2444//2656 面
                     string[] tempArray = texLineTem.Split(new char[] { '/', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
                     Surface surface = new Surface();
-                    int i = 0;
+                    int i = 2;
                     int k = 1;
-                    while (i < 3)
+                    while (i >= 0)
                     {
                         if (mesh.Vertex.Count() != 0)
                         {
@@ -102,14 +102,11 @@ namespace TestRenderer
                             surface.Norm[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        i++;
+                        i--;
                     }
                     mesh.Surfaces.Add(surface);
                 }
             }
         }
-
-        
-
     }
 }

@@ -10,8 +10,9 @@ namespace TestRenderer
 
         ObjLoader objLoader = new ObjLoader();
         string? fileName = null;
-        Bitmap bitmap = new Bitmap(400, 400);
-
+        Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
+        float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
+        Vector3 light_dir = new Vector3(0, 0, 1);
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -32,7 +33,12 @@ namespace TestRenderer
         {
             if (objLoader.mesh != null)
             {
-                for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
+                for(int i = 0; i < Canvas.canvas_width * Canvas.canvas_height; i++)
+                {
+                    zbuffer[i] = float.MinValue;
+                }
+
+                /*for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
                 {
                     ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
                     for (int j = 0; j < 3; j++)
@@ -46,7 +52,60 @@ namespace TestRenderer
                         int y1 = (int)(v1.y + 1) * 1 + 150;
                         Canvas.DrawLine(x0, y0, x1, y1, ref bitmap, Color.Red);
                     }
+                }*/
+
+                /*for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
+                {
+                    ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
+                    IntVector2[] screen_coords = new IntVector2[3];
+                    Vector3[] world_coords = new Vector3[3];
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        Vector3 v = objLoader.mesh.Vertex[s.Vert[j]];
+                        screen_coords[j] = new IntVector2(Convert.ToInt16((v.x * 0.8f + 1) * Canvas.canvas_width/2), Convert.ToInt16((v.y * 0.8f + 1) * Canvas.canvas_height / 2));
+                        world_coords[j] = v;
+                    }
+
+                    Vector3 n = Vector3.CrossProduct(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]);
+                
+                    float intensity = Vector3.DotProduct(n.normalized, light_dir);
+                    //±³ÃæÌÞ³ý
+                    if(intensity > 0)
+                    {
+                        int gray = Convert.ToInt16(intensity * 255);
+                        Color color = Color.FromArgb(gray, gray, gray);
+                        Canvas.DrawTriangle1(screen_coords[0], screen_coords[1], screen_coords[2], ref bitmap, color);
+                    }
+                }*/
+
+                for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
+                {
+                    ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
+            
+                    Vector3[] world_coords = new Vector3[3];
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        Vector3 v = objLoader.mesh.Vertex[s.Vert[j]];
+                        
+                        world_coords[j] = v;
+                    }
+
+                    Vector3 n = Vector3.CrossProduct(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]);
+
+                    float intensity = Vector3.DotProduct(n.normalized, light_dir);
+                    //±³ÃæÌÞ³ý
+                    if (intensity > 0)
+                    {
+                        int gray = Convert.ToInt16(intensity * 255);
+                        Color color = Color.FromArgb(gray, gray, gray);
+
+                        Canvas.DrawTriangle2(world_coords, zbuffer, ref bitmap, color);
+                    }
                 }
+
+                bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
             }
 
             this.pictureBox1.Image = bitmap;
