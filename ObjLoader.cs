@@ -30,13 +30,14 @@ namespace TestRenderer
         }
 
         public Model mesh = new Model();
+        private string? fileName = null;
+        public Bitmap? baseTexture = null;
 
         public void LoadObjFile(String fileName)
         {
             StreamReader objReader = new StreamReader(fileName);
-            
             string texLineTem;
-
+            this.fileName = fileName;
             while (objReader.Peek() != -1)
             {
                 texLineTem = objReader.ReadLine();
@@ -107,6 +108,21 @@ namespace TestRenderer
                     mesh.Surfaces.Add(surface);
                 }
             }
+
+            baseTexture = GetBaseTexture();
+        }
+
+        public Bitmap? GetBaseTexture()
+        {
+            if (fileName == null)
+                return null;
+            char[] chars = { '.', 'o', 'b', 'j' };
+            string textureName = fileName.TrimEnd(chars) + "_diffuse.png";
+
+            /*FileStream stream = new FileStream(textureName, FileMode.Open);
+            return Bitmap.FromStream(stream) as Bitmap;*/
+            return Bitmap.FromFile(textureName) as Bitmap;
+            
         }
     }
 }

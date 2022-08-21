@@ -33,6 +33,7 @@ namespace TestRenderer
         {
             if (objLoader.mesh != null)
             {
+
                 for(int i = 0; i < Canvas.canvas_width * Canvas.canvas_height; i++)
                 {
                     zbuffer[i] = float.MinValue;
@@ -54,10 +55,11 @@ namespace TestRenderer
                     }
                 }*/
 
-                /*for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
+                for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
                 {
                     ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
                     IntVector2[] screen_coords = new IntVector2[3];
+                    Vector2[] texture_uv = new Vector2[3];
                     Vector3[] world_coords = new Vector3[3];
 
                     for (int j = 0; j < 3; j++)
@@ -65,6 +67,7 @@ namespace TestRenderer
                         Vector3 v = objLoader.mesh.Vertex[s.Vert[j]];
                         screen_coords[j] = new IntVector2(Convert.ToInt16((v.x * 0.8f + 1) * Canvas.canvas_width/2), Convert.ToInt16((v.y * 0.8f + 1) * Canvas.canvas_height / 2));
                         world_coords[j] = v;
+                        texture_uv[j] = objLoader.mesh.Texture[s.Tex[j]];
                     }
 
                     Vector3 n = Vector3.CrossProduct(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]);
@@ -73,23 +76,22 @@ namespace TestRenderer
                     //±³ÃæÌÞ³ý
                     if(intensity > 0)
                     {
-                        int gray = Convert.ToInt16(intensity * 255);
+                        int gray = Convert.ToInt32(intensity * 255);
                         Color color = Color.FromArgb(gray, gray, gray);
-                        Canvas.DrawTriangle1(screen_coords[0], screen_coords[1], screen_coords[2], ref bitmap, color);
+                        Canvas.DrawTriangle1(screen_coords[0], screen_coords[1], screen_coords[2], texture_uv[0], texture_uv[1], texture_uv[2], objLoader.baseTexture, ref bitmap, color);
                     }
-                }*/
+                }
 
                 for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
                 {
                     ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
-            
+                    Vector2[] texture_uv = new Vector2[3];
                     Vector3[] world_coords = new Vector3[3];
 
                     for (int j = 0; j < 3; j++)
                     {
-                        Vector3 v = objLoader.mesh.Vertex[s.Vert[j]];
-                        
-                        world_coords[j] = v;
+                        texture_uv[j] = objLoader.mesh.Texture[s.Tex[j]];
+                        world_coords[j] = objLoader.mesh.Vertex[s.Vert[j]];
                     }
 
                     Vector3 n = Vector3.CrossProduct(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]);
@@ -101,10 +103,10 @@ namespace TestRenderer
                         int gray = Convert.ToInt16(intensity * 255);
                         Color color = Color.FromArgb(gray, gray, gray);
 
-                        Canvas.DrawTriangle2(world_coords, zbuffer, ref bitmap, color);
+                        Canvas.DrawTriangle2(world_coords, texture_uv, zbuffer, objLoader.baseTexture, ref bitmap, color);
                     }
                 }
-
+             
                 bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
             }
 
