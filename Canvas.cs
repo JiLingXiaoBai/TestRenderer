@@ -123,7 +123,7 @@ namespace TestRenderer
                         Vector2 uvP = uvA + (uvB - uvA) * phi;
                         Color texColor = texture.GetPixel((int)(uvP.x * texture.Width), (int)((1 - uvP.y) * texture.Height));
                         Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
-                        resBitmap.SetPixel(P.x, P.y, resColor);
+                        resBitmap.SetPixel(P.x, canvas_height - P.y, resColor);
                     }
                 }
             }
@@ -194,7 +194,7 @@ namespace TestRenderer
                         zbuffer[(int)(p.x + p.y * canvas_width)] = p.z;
                         Color texColor = baseTexture.GetPixel((int)(uvP.x * baseTexture.Width), (int)((1 - uvP.y) * baseTexture.Height));
                         Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
-                        bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(p.y), resColor);
+                        bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
                     }
                 }
             }

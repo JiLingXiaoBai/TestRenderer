@@ -3,16 +3,52 @@ namespace TestRenderer
 {
     public partial class Form1 : Form
     {
+        
+
+        ObjLoader objLoader = new ObjLoader();
+        
+        Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
+        float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
+
+        Vector3 light_dir = new Vector3(0, 0, 1);
+
+        Matrix4x4 m_scale;//缩放矩阵
+        Matrix4x4 m_rotationX;//绕X轴旋转矩阵
+        Matrix4x4 m_rotationY;//绕Y轴旋转矩阵
+        Matrix4x4 m_rotationZ;//绕Z轴旋转矩阵
+        Matrix4x4 m_view;//将空间坐标变换为摄像机坐标矩阵,即平移矩阵
+        Matrix4x4 m_orthoProjection;//正交投影矩阵
+        Matrix4x4 m_perspectiveProjection;//透视投影矩阵
+
         public Form1()
         {
             InitializeComponent();
-        }
+            m_scale = new Matrix4x4();
+            m_scale[1, 1] = 200;
+            m_scale[2, 2] = 200;
+            m_scale[3, 3] = 200;
+            m_scale[4, 4] = 1;
 
-        ObjLoader objLoader = new ObjLoader();
-        string? fileName = null;
-        Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
-        float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
-        Vector3 light_dir = new Vector3(0, 0, 1);
+            m_rotationX = new Matrix4x4();
+            m_rotationY = new Matrix4x4();
+            m_rotationZ = new Matrix4x4();
+
+            m_view = new Matrix4x4();
+            m_view[1, 1] = 1;
+            m_view[2, 2] = 1;
+            m_view[3, 3] = 1;
+            m_view[4, 3] = 200;//z轴偏移200，x和y不变,变换后三角形在坐标系顶点为正值，所以200取正值
+            m_view[4, 4] = 1;
+
+            m_orthoProjection = new Matrix4x4();
+            /*m_orthoProjection[1, 1] = 1;
+            m_orthoProjection[2, 2] = 1;
+            m_orthoProjection[3, 3] = 1;
+            m_orthoProjection[3, 4] = 1.0f / 200;// 1/d, d为焦距
+            m_orthoProjection[4, 4] = 1;*/
+
+            m_perspectiveProjection = new Matrix4x4();
+        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -22,7 +58,7 @@ namespace TestRenderer
             dialog.Filter = "模型文件(*.obj)|*.obj";
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                fileName = dialog.FileName;
+                string fileName = dialog.FileName;
                 if (fileName == null)
                     return;
                 objLoader.LoadObjFile(fileName);
@@ -78,11 +114,12 @@ namespace TestRenderer
                     {
                         int gray = Convert.ToInt32(intensity * 255);
                         Color color = Color.FromArgb(gray, gray, gray);
-                        Canvas.DrawTriangle1(screen_coords[0], screen_coords[1], screen_coords[2], texture_uv[0], texture_uv[1], texture_uv[2], objLoader.baseTexture, ref bitmap, color);
+                        if (objLoader.baseTexture != null)
+                            Canvas.DrawTriangle1(screen_coords[0], screen_coords[1], screen_coords[2], texture_uv[0], texture_uv[1], texture_uv[2], objLoader.baseTexture, ref bitmap, color);
                     }
                 }
 
-                for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
+                /*for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
                 {
                     ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
                     Vector2[] texture_uv = new Vector2[3];
@@ -103,14 +140,58 @@ namespace TestRenderer
                         int gray = Convert.ToInt16(intensity * 255);
                         Color color = Color.FromArgb(gray, gray, gray);
 
-                        Canvas.DrawTriangle2(world_coords, texture_uv, zbuffer, objLoader.baseTexture, ref bitmap, color);
+                        if(objLoader.baseTexture != null)
+                            Canvas.DrawTriangle2(world_coords, texture_uv, zbuffer, objLoader.baseTexture, ref bitmap, color);
                     }
-                }
-             
-                bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                } */  
             }
-
+            
             this.pictureBox1.Image = bitmap;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            //MVP 矩阵
+
+            this.Invalidate();
+        }
+
+        private void RotateX_Scroll(object sender, EventArgs e)
+        {
+            double angle = RotateX.Value / 180.0 * Math.PI;
+            m_rotationX[1, 1] = 1;
+            m_rotationX[2, 2] = (float)Math.Cos(angle);
+            m_rotationX[2, 3] = (float)Math.Sin(angle);
+            m_rotationX[3, 2] = (float)-Math.Sin(angle);
+            m_rotationX[3, 3] = (float)Math.Cos(angle);
+            m_rotationX[4, 4] = 1;
+        }
+
+        private void RotateY_Scroll(object sender, EventArgs e)
+        {
+            double angle = RotateY.Value / 180.0 * Math.PI;
+            m_rotationY[1, 1] = (float)Math.Cos(angle);
+            m_rotationY[1, 3] = (float)Math.Sin(angle);
+            m_rotationY[2, 2] = 1;
+            m_rotationY[3, 1] = (float)-Math.Sin(angle);
+            m_rotationY[3, 3] = (float)Math.Cos(angle);
+            m_rotationY[4, 4] = 1;
+        }
+
+        private void RotateZ_Scroll(object sender, EventArgs e)
+        {
+            double angle = RotateZ.Value / 180.0 * Math.PI;
+            m_rotationZ[1, 1] = (float)Math.Cos(angle);
+            m_rotationZ[1, 2] = (float)Math.Sin(angle);
+            m_rotationZ[2, 1] = (float)-Math.Sin(angle);
+            m_rotationZ[2, 2] = (float)Math.Cos(angle);
+            m_rotationZ[3, 3] = 1;
+            m_rotationZ[4, 4] = 1;
+        }
+
+        private void ScaleValue_Scroll(object sender, EventArgs e)
+        {
+            //m_view[4, 3] = (sender as TrackBar).Value;
         }
 
     }
