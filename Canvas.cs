@@ -21,8 +21,14 @@ namespace TestRenderer
 
 
         //Bresenham算法
-        public static void DrawLine(int x0, int y0, int x1, int y1, ref Bitmap bitmap, Color color)
+        public static void DrawLine(Vector3 v0, Vector3 v1, ref Bitmap bitmap, Color color)
         {
+
+            int x0 = Convert.ToInt32(v0.x * canvas_width / 2 + canvas_width / 2);
+            int y0 = Convert.ToInt32(v0.y * canvas_height / 2 + canvas_height / 2);
+            int x1 = Convert.ToInt32(v1.x * canvas_width / 2 + canvas_width / 2);
+            int y1 = Convert.ToInt32(v1.y * canvas_height / 2 + canvas_height / 2);
+
             bool steep = false;
             if(Math.Abs(x0 - x1) < Math.Abs(y0 - y1))
             {
@@ -46,13 +52,16 @@ namespace TestRenderer
 
             for(int x = x0; x <= x1; x++)
             {
-                if (steep)
+                if (x >= 0 && x < canvas_width && y >= 0 && y < canvas_height)
                 {
-                    bitmap.SetPixel(y, x, color);
-                }
-                else
-                {
-                    bitmap.SetPixel(x, y, color);
+                    if (steep)
+                    {
+                        bitmap.SetPixel(y, x, color);
+                    }
+                    else
+                    {
+                        bitmap.SetPixel(x, y, color);
+                    }
                 }
 
                 error += derror;
@@ -66,25 +75,36 @@ namespace TestRenderer
         }
 
         //二维三角形，从下往上水平画线填充三角形面
-        public static void DrawTriangle1(IntVector2 t0, IntVector2 t1, IntVector2 t2, Vector2 uv0, Vector2 uv1, Vector2 uv2, Bitmap texture, ref Bitmap resBitmap, Color color)
+        public static void DrawTriangle1(Vector3[] ndc_pos, Vector2[] uv, bool useDiffuseTex, Bitmap? diffuseTex, Color color, ref Bitmap resBitmap)
         {
+            int x, y;
+            x = Convert.ToInt32(ndc_pos[0].x * canvas_width / 2 + canvas_width / 2);
+            y = Convert.ToInt32(ndc_pos[0].y * canvas_height / 2 + canvas_height / 2);
+            IntVector2 t0 = new IntVector2(x, y);
+            x = Convert.ToInt32(ndc_pos[1].x * canvas_width / 2 + canvas_width / 2);
+            y = Convert.ToInt32(ndc_pos[1].y * canvas_height / 2 + canvas_height / 2);
+            IntVector2 t1 = new IntVector2(x, y);
+            x = Convert.ToInt32(ndc_pos[2].x * canvas_width / 2 + canvas_width / 2);
+            y = Convert.ToInt32(ndc_pos[2].y * canvas_height / 2 + canvas_height / 2);
+            IntVector2 t2 = new IntVector2(x, y);
+
             //三角形的三个点y值相同，面积为0
             if (t0.y == t1.y && t1.y == t2.y) return;
             //根据y值大小对坐标进行排序
             if (t0.y > t1.y)
             {
                 TempSwap(ref t0, ref t1);
-                TempSwap(ref uv0, ref uv1);
+                TempSwap(ref uv[0], ref uv[1]);
             }
             if (t0.y > t2.y)
             {
                 TempSwap(ref t0, ref t2);
-                TempSwap(ref uv0, ref uv2);
+                TempSwap(ref uv[0], ref uv[2]);
             }
             if (t1.y > t2.y)
             { 
                 TempSwap(ref t1, ref t2);
-                TempSwap(ref uv1, ref uv2);
+                TempSwap(ref uv[1], ref uv[2]);
             }
 
 
@@ -101,8 +121,8 @@ namespace TestRenderer
                 IntVector2 A = t0 + (t2 - t0) * alpha;
                 IntVector2 B = second_half ? t1 + (t2 - t1) * beta : t0 + (t1 - t0) * beta;
 
-                Vector2 uvA = uv0 + (uv2 - uv0) * alpha;
-                Vector2 uvB = second_half ? uv1 + (uv2 - uv1) * beta : uv0 + (uv1 - uv0) * beta;
+                Vector2 uvA = uv[0] + (uv[2] - uv[0]) * alpha;
+                Vector2 uvB = second_half ? uv[1] + (uv[2] - uv[1]) * beta : uv[0] + (uv[1] - uv[0]) * beta;
 
                 if (A.x > B.x)
                 {
@@ -117,13 +137,19 @@ namespace TestRenderer
                     int y = t0.y + i;*/
                     IntVector2 P = A + (B - A) * phi;
                     
-
                     if (P.x >= 0 && P.x < canvas_width && P.y >=0 && P.y < canvas_height)
                     {
-                        Vector2 uvP = uvA + (uvB - uvA) * phi;
-                        Color texColor = texture.GetPixel((int)(uvP.x * texture.Width), (int)((1 - uvP.y) * texture.Height));
-                        Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
-                        resBitmap.SetPixel(P.x, canvas_height - P.y, resColor);
+                        if (useDiffuseTex && diffuseTex != null)
+                        {
+                            Vector2 uvP = uvA + (uvB - uvA) * phi;
+                            Color texColor = diffuseTex.GetPixel((int)(uvP.x * diffuseTex.Width), (int)((1 - uvP.y) * diffuseTex.Height));
+                            Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                            resBitmap.SetPixel(P.x, canvas_height - P.y, resColor);
+                        }
+                        else
+                        {
+                            resBitmap.SetPixel(P.x, canvas_height - P.y, color);
+                        }
                     }
                 }
             }
@@ -148,7 +174,7 @@ namespace TestRenderer
             return new Vector3(-1, 1, 1);
         }
 
-        public static void DrawTriangle2(Vector3[] vertexPos, Vector2[] uv, float[] zbuffer, Bitmap baseTexture, ref Bitmap bitmap, Color color)
+        public static void DrawTriangle2(Vector3[] ndc_pos, Vector2[] uv, bool useDiffuseTex, Bitmap? baseTexture, float[] zbuffer, Color color, ref Bitmap bitmap)
         {
             Vector2 bboxmin = new Vector2(float.MaxValue,float.MaxValue);
             Vector2 bboxmax = new Vector2(float.MinValue,float.MinValue);
@@ -161,9 +187,9 @@ namespace TestRenderer
                 //bboxmax.x = Math.Min(clamp.x, Math.Max(bboxmax.x, vertexPos[i].x));
                 //bboxmax.y = Math.Min(clamp.y, Math.Max(bboxmax.y, vertexPos[i].y));
                 screen_pos[i] = new Vector3();
-                screen_pos[i].x = (vertexPos[i].x + 1) * canvas_width / 2;
-                screen_pos[i].y = (vertexPos[i].y + 1) * canvas_height / 2;
-                screen_pos[i].z = (vertexPos[i].z + 1) * (canvas_width + canvas_height) / 4;
+                screen_pos[i].x = (ndc_pos[i].x + 1) * canvas_width / 2;
+                screen_pos[i].y = (ndc_pos[i].y + 1) * canvas_height / 2;
+                screen_pos[i].z = ndc_pos[i].z;
                 
                 for (int j = 0; j < 2; j++)
                 {
@@ -171,7 +197,7 @@ namespace TestRenderer
                     bboxmax[j] = Math.Min(clamp[j], Math.Max(bboxmax[j], screen_pos[i][j]));
                 }
             }
-
+   
             Vector3 p = new Vector3();
             
             for(p.x = (int)Math.Ceiling(bboxmin.x); p.x <= (int)Math.Floor(bboxmax.x); p.x++)
@@ -192,11 +218,31 @@ namespace TestRenderer
                     if (zbuffer[(int)(p.x + p.y * canvas_width)] < p.z)
                     {
                         zbuffer[(int)(p.x + p.y * canvas_width)] = p.z;
-                        Color texColor = baseTexture.GetPixel((int)(uvP.x * baseTexture.Width), (int)((1 - uvP.y) * baseTexture.Height));
-                        Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
-                        bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
+                        if(useDiffuseTex && baseTexture != null)
+                        {
+                            Color texColor = baseTexture.GetPixel((int)(uvP.x * baseTexture.Width), (int)((1 - uvP.y) * baseTexture.Height));
+                            Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                            bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
+                        }
+                        else
+                        {
+                            bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), color);
+                        }
+                        
                     }
                 }
+            }
+        }
+
+        public static void DrawTrangle(Vector3[] ndc_pos, Vector2[] texture_uv, bool useDiffueTex, Bitmap? baseTexture, bool useZBuffer, float[] zbuffer, Color color, ref Bitmap bitmap)
+        {
+            if (!useZBuffer)
+            {
+                DrawTriangle1(ndc_pos, texture_uv, useDiffueTex, baseTexture, color, ref bitmap);
+            }
+            else
+            {
+                DrawTriangle2(ndc_pos, texture_uv, useDiffueTex, baseTexture, zbuffer, color, ref bitmap);
             }
         }
     }

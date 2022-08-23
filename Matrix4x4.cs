@@ -39,16 +39,6 @@ namespace TestRenderer
             return newM;
         }
 
-        //四维行向量和矩阵相乘
-        public static Vector4 operator * (Vector4 v, Matrix4x4 m)
-        {
-            Vector4 newV = new Vector4();
-            newV.x = v.x * m[1, 1] + v.y * m[2, 1] + v.z * m[3, 1] + v.w * m[4, 1];
-            newV.y = v.x * m[1, 2] + v.y * m[2, 2] + v.z * m[3, 2] + v.w * m[4, 2];
-            newV.z = v.x * m[1, 3] + v.y * m[2, 3] + v.z * m[3, 3] + v.w * m[4, 3];
-            newV.w = v.x * m[1, 4] + v.y * m[2, 4] + v.z * m[3, 4] + v.w * m[4, 4];
-            return newV;
-        }
 
         public static Matrix4x4 Transpose(Matrix4x4 m)
         {

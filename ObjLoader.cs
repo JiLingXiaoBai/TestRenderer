@@ -29,8 +29,8 @@ namespace TestRenderer
             //面的格式为：f Vertex1/Texture1/Normal1 Vertex2/Texture2/Normal2 Vertex3/Texture3/Normal3
         }
 
-        public Model mesh = new Model();
         private string? fileName = null;
+        public Model? mesh = null;
         public Bitmap? baseTexture = null;
 
         public void LoadObjFile(String fileName)
@@ -38,6 +38,7 @@ namespace TestRenderer
             StreamReader objReader = new StreamReader(fileName);
             string texLineTem;
             this.fileName = fileName;
+            Model model = new Model();
             while (objReader.Peek() != -1)
             {
                 texLineTem = objReader.ReadLine();
@@ -52,7 +53,7 @@ namespace TestRenderer
                         Vector2 vt = new Vector2();
                         vt.x = float.Parse(tempArray[1]);
                         vt.y = float.Parse(tempArray[2]);
-                        mesh.Texture.Add(vt);
+                        model.Texture.Add(vt);
                     }
                     else if (texLineTem.IndexOf("n") == 1)//vn 0.637005 -0.0421857 0.769705 法向量
                     {
@@ -67,7 +68,7 @@ namespace TestRenderer
                         }
                         else vn.z = float.Parse(tempArray[3]);
 
-                        mesh.Normal.Add(vn);
+                        model.Normal.Add(vn);
                     }
                     else
                     {//v -53.0413 158.84 -135.806 点
@@ -76,7 +77,7 @@ namespace TestRenderer
                         v.x = float.Parse(tempArray[1]);
                         v.y = float.Parse(tempArray[2]);
                         v.z = float.Parse(tempArray[3]);
-                        mesh.Vertex.Add(v);
+                        model.Vertex.Add(v);
                     }
                 }
                 else if (texLineTem.IndexOf("f") == 0)
@@ -88,27 +89,30 @@ namespace TestRenderer
                     int k = 1;
                     while (i >= 0)
                     {
-                        if (mesh.Vertex.Count() != 0)
+                        if (model.Vertex.Count() != 0)
                         {
                             surface.Vert[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (mesh.Texture.Count() != 0)
+                        if (model.Texture.Count() != 0)
                         {
                             surface.Tex[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (mesh.Normal.Count() != 0)
+                        if (model.Normal.Count() != 0)
                         {
                             surface.Norm[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
                         i--;
                     }
-                    mesh.Surfaces.Add(surface);
+                    model.Surfaces.Add(surface);
                 }
             }
-
+            if(model.Vertex.Count != 0)
+            {
+                mesh = model;
+            }
             baseTexture = GetBaseTexture();
         }
 
@@ -118,11 +122,7 @@ namespace TestRenderer
                 return null;
             char[] chars = { '.', 'o', 'b', 'j' };
             string textureName = fileName.TrimEnd(chars) + "_diffuse.png";
-
-            /*FileStream stream = new FileStream(textureName, FileMode.Open);
-            return Bitmap.FromStream(stream) as Bitmap;*/
             return Bitmap.FromFile(textureName) as Bitmap;
-            
         }
     }
 }
