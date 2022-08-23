@@ -116,6 +116,16 @@ namespace TestRenderer
             baseTexture = GetBaseTexture();
         }
 
+        public int triangleCount
+        {
+            get
+            {
+                if (mesh != null)
+                    return mesh.Surfaces.Count;
+                return 0;
+            }
+        }
+
         public Bitmap? GetBaseTexture()
         {
             if (fileName == null)

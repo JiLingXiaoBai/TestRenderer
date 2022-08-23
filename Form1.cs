@@ -12,7 +12,6 @@ namespace TestRenderer
 
         Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
         float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
-
         Vector3 light_dir = new Vector3(0, 0, 1);
 
         Matrix4x4 m_scale;//缩放矩阵
@@ -22,13 +21,19 @@ namespace TestRenderer
         Matrix4x4 m_view;//将空间坐标变换为摄像机坐标矩阵,即平移矩阵
         Matrix4x4 m_orthoProjection;//正交投影矩阵
         Matrix4x4 m_perspectiveProjection;//透视投影矩阵
-        LightingType lightingType;
+        LightingType lightingType = LightingType.Flat;
         bool isReady = false;
 
-        float near_dis = 50;
-        float far_dis = 550;
+        float near_dis = 500;
+        float far_dis = 1000;
         float near_width = 500;
         float near_height = 500;
+
+        Vector3[][][]? lineVertNDC_pos;
+        Vector2[][]? texture_uv;
+        Vector3[][]? model_pos;
+        Vector3[][]? world_pos;
+        Vector3[][]? ndc_pos;
 
 
         public Form1()
@@ -51,23 +56,22 @@ namespace TestRenderer
             m_view[1, 1] = 1;
             m_view[2, 2] = 1;
             m_view[3, 3] = 1;
-            m_view[4, 3] = 200;//z轴偏移200，x和y不变,变换后三角形在坐标系顶点为正值，所以200取正值
+            m_view[4, 3] = -800;
             m_view[4, 4] = 1;
 
             m_orthoProjection = new Matrix4x4();
             m_orthoProjection[1, 1] = 2 / near_width;
             m_orthoProjection[2, 2] = 2 / near_height;
-            m_orthoProjection[3, 3] = 2 / (near_dis - far_dis); 
+            m_orthoProjection[3, 3] = 2 / (far_dis - near_dis); 
             m_orthoProjection[4, 3] = (near_dis + far_dis) / (near_dis - far_dis);
             m_orthoProjection[4, 4] = 1;
 
             m_perspectiveProjection = new Matrix4x4();
             m_perspectiveProjection[1, 1] = 2 * near_dis / near_width;
-            m_perspectiveProjection[2, 2] = 2 * near_dis / near_height;
-            m_perspectiveProjection[3, 3] = (near_dis + far_dis) / (near_dis - far_dis);
-            m_perspectiveProjection[3, 4] = -1;
+            m_perspectiveProjection[2, 2] = -2 * near_dis / near_height;
+            m_perspectiveProjection[3, 3] = (near_dis + far_dis) / (far_dis - near_dis);
+            m_perspectiveProjection[3, 4] = 1;
             m_perspectiveProjection[4, 3] = 2 * near_dis * far_dis / (near_dis - far_dis);
-
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -85,6 +89,63 @@ namespace TestRenderer
             }
         }
 
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (objLoader.mesh != null)
+            {
+                if (!isReady)
+                {
+                    lineVertNDC_pos = new Vector3[objLoader.triangleCount][][];
+                    texture_uv = new Vector2[objLoader.triangleCount][];
+                    model_pos = new Vector3[objLoader.triangleCount][];
+                    ndc_pos = new Vector3[objLoader.triangleCount][];
+                    world_pos = new Vector3[objLoader.triangleCount][];
+
+                    for (int i = 0; i < objLoader.triangleCount; i++)
+                    {
+                        texture_uv[i] = new Vector2[3];
+                        model_pos[i] = new Vector3[3];
+                        ndc_pos[i] = new Vector3[3];
+                        world_pos[i] = new Vector3[3];
+                        lineVertNDC_pos[i] = new Vector3[3][];
+                        for (int j = 0; j < 3; j++)
+                        {
+                            lineVertNDC_pos[i][j] = new Vector3[2];
+                        }
+                    }
+                }
+
+                //MVP 矩阵
+                Matrix4x4 M = m_rotationZ.Mul(m_rotationX).Mul(m_rotationY).Mul(m_scale);
+                Matrix4x4 MV = M.Mul(m_view);
+                Matrix4x4 MVP;
+                if (IsOrtho.Checked)
+                    MVP = MV.Mul(m_orthoProjection);
+                else
+                    MVP = MV.Mul(m_perspectiveProjection);
+
+                for (int i = 0; i < objLoader.triangleCount; i++)
+                {
+                    ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        Vector3 v0 = objLoader.mesh.Vertex[s.Vert[j]];
+                        Vector3 v1 = objLoader.mesh.Vertex[s.Vert[(j + 1) % 3]];
+
+                        lineVertNDC_pos[i][j][0] = (new Vector4(v0) * MVP).transTo3D;
+                        lineVertNDC_pos[i][j][1] = (new Vector4(v1) * MVP).transTo3D;
+                        texture_uv[i][j] = objLoader.mesh.Texture[s.Tex[j]];
+                        model_pos[i][j] = objLoader.mesh.Vertex[s.Vert[j]];
+                        world_pos[i][j] = (new Vector4(model_pos[i][j]) * M).transTo3D;
+                        ndc_pos[i][j] = (new Vector4(model_pos[i][j]) * MVP).transTo3D;
+                    }
+                }
+                isReady = true;
+                this.Invalidate();
+            }
+        }
+
         private void Form1_Paint(object sender, EventArgs e)
         {
             if (isReady)
@@ -97,90 +158,47 @@ namespace TestRenderer
 
                 if (IsLine.Checked) //线框模式
                 {
-                    for(int i = 0; i < 3; i++)
+                    for (int i = 0; i < objLoader.triangleCount; i++)
                     {
-                        Canvas.DrawLine(lineVertNDC_pos[i, 0], lineVertNDC_pos[i, 1], ref bitmap, Color.Red);
+                        for (int j = 0; j < 3; j++)
+                        {
+                            Canvas.DrawLine(lineVertNDC_pos[i][j][0], lineVertNDC_pos[i][j][1], ref bitmap, Color.Red);
+                        }
                     }
                 }
                 else
                 {
                     float intensity = 0;
                     Color color = Color.White;
-                    switch (lightingType)
-                    {
-                        case LightingType.Flat:
-                            Vector3 n = Vector3.CrossProduct(world_pos[2] - world_pos[0], world_pos[1] - world_pos[0]);
-                            intensity = Vector3.DotProduct(n.normalized, light_dir);
-                            break;
-                        case LightingType.Vertex:
-                            break;
-                        case LightingType.Pixel:
-                            break;
-                        default: 
-                            return;
-                    }
 
-                    //背面剔除
-                    if (intensity > 0)
-                    {
-                        int gray = Convert.ToInt32(intensity * 255);
-                        color = Color.FromArgb(gray, gray, gray);
-                    }
+                    for (int i = 0; i < objLoader.triangleCount; i++)
+                    { 
+                        switch (lightingType)
+                        {
+                            case LightingType.Flat:
+                                Vector3 n = Vector3.CrossProduct(world_pos[i][2] - world_pos[i][0], world_pos[i][1] - world_pos[i][0]);
+                                intensity = Vector3.DotProduct(n.normalized, light_dir);
+                                break;
+                            case LightingType.Vertex:
+                                break;
+                            case LightingType.Pixel:
+                                break;
+                            default:
+                                return;
+                        }
 
-                    Canvas.DrawTrangle(ndc_pos, texture_uv, IsDiffuseTex.Checked, objLoader.baseTexture, IsZBuffer.Checked, zbuffer, color, ref bitmap);
+                        //背面剔除
+                        if (intensity > 0)
+                        {
+                            int gray = Convert.ToInt32(intensity * 255);
+                            color = Color.FromArgb(gray, gray, gray);
+                            Canvas.DrawTrangle(ndc_pos[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, IsZBuffer.Checked, zbuffer, color, ref bitmap);
+                        }
+                    }
                 }
             }
             
             this.pictureBox1.Image = bitmap;
-        }
-
-        Vector3[,] lineVertNDC_pos = new Vector3[3, 2];
-        Vector2[] texture_uv = new Vector2[3];
-        Vector3[] model_pos = new Vector3[3];
-        Vector3[] world_pos = new Vector3[3];
-        Vector3[] ndc_pos = new Vector3[3];
-        
-        
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            if (objLoader.mesh != null)
-            {
-                //MVP 矩阵
-                Matrix4x4 M = m_scale * (m_rotationZ * (m_rotationY * m_rotationX));
-                Matrix4x4 MV = m_view * M;
-                Matrix4x4 MVP;
-                if (IsOrtho.Checked)
-                    MVP = m_orthoProjection * MV;
-                else
-                    MVP = m_perspectiveProjection * MV;
-
-                for (int i = 0; i < objLoader.mesh.Surfaces.Count; i++)
-                {
-                    ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
-                    
-                    for (int j = 0; j < 3; j++)
-                    {
-                        if (IsLine.Checked)
-                        {
-                            Vector3 v0 = objLoader.mesh.Vertex[s.Vert[j]];
-                            Vector3 v1 = objLoader.mesh.Vertex[s.Vert[(j + 1) % 3]];
-                            
-                            lineVertNDC_pos[j, 0] = (new Vector4(v0) * MVP).transTo3D;
-                            lineVertNDC_pos[j, 1] = (new Vector4(v1) * MVP).transTo3D;
-                        }
-                        else
-                        {
-                            texture_uv[j] = objLoader.mesh.Texture[s.Tex[j]];
-                            model_pos[j] = objLoader.mesh.Vertex[s.Vert[j]];
-                            world_pos[j] = (new Vector4(model_pos[j]) * M).transTo3D;
-                            ndc_pos[j] = (new Vector4(model_pos[j]) * MVP).transTo3D;
-                        }   
-                    }
-
-                }
-                isReady = true;
-                this.Invalidate();
-            }
         }
 
         private void SetRotateMatrix(Axis axis)

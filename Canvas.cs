@@ -52,15 +52,15 @@ namespace TestRenderer
 
             for(int x = x0; x <= x1; x++)
             {
-                if (x >= 0 && x < canvas_width && y >= 0 && y < canvas_height)
+                if (x > 0 && x < canvas_width && y > 0 && y < canvas_height)
                 {
                     if (steep)
                     {
-                        bitmap.SetPixel(y, x, color);
+                        bitmap.SetPixel(y, canvas_height - x, color);
                     }
                     else
                     {
-                        bitmap.SetPixel(x, y, color);
+                        bitmap.SetPixel(x, canvas_height - y, color);
                     }
                 }
 
@@ -137,7 +137,7 @@ namespace TestRenderer
                     int y = t0.y + i;*/
                     IntVector2 P = A + (B - A) * phi;
                     
-                    if (P.x >= 0 && P.x < canvas_width && P.y >=0 && P.y < canvas_height)
+                    if (P.x >= 0 && P.x < canvas_width && P.y > 0 && P.y <= canvas_height)
                     {
                         if (useDiffuseTex && diffuseTex != null)
                         {
@@ -222,10 +222,12 @@ namespace TestRenderer
                         {
                             Color texColor = baseTexture.GetPixel((int)(uvP.x * baseTexture.Width), (int)((1 - uvP.y) * baseTexture.Height));
                             Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                            if (p.y == 0) return;
                             bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
                         }
                         else
                         {
+                            if (p.y == 0) return;
                             bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), color);
                         }
                         
