@@ -132,7 +132,19 @@ namespace TestRenderer
                 return null;
             char[] chars = { '.', 'o', 'b', 'j' };
             string textureName = fileName.TrimEnd(chars) + "_diffuse.png";
-            return Bitmap.FromFile(textureName) as Bitmap;
+            try
+            {
+                Bitmap? diffuse = Bitmap.FromFile(textureName) as Bitmap;
+                return diffuse;
+            }
+            catch(System.IO.FileNotFoundException e)
+            {
+                if (e.Source != null)
+                    Console.WriteLine("IOException source: {0}", e.Source);
+                return null;
+                throw;
+            }
+
         }
     }
 }

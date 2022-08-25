@@ -6,8 +6,6 @@ namespace TestRenderer
 {
     public partial class Form1 : Form
     {
-        
-
         ObjLoader objLoader = new ObjLoader();
 
         Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
@@ -52,26 +50,27 @@ namespace TestRenderer
             m_rotationZ = new Matrix4x4();
             SetRotateMatrix(Axis.Z);
 
+            //·´×ªzÖá
             m_view = new Matrix4x4();
             m_view[1, 1] = 1;
             m_view[2, 2] = 1;
-            m_view[3, 3] = 1;
-            m_view[4, 3] = -800;
+            m_view[3, 3] = -1;
+            m_view[4, 3] = 800;
             m_view[4, 4] = 1;
 
             m_orthoProjection = new Matrix4x4();
             m_orthoProjection[1, 1] = 2 / near_width;
             m_orthoProjection[2, 2] = 2 / near_height;
-            m_orthoProjection[3, 3] = 2 / (far_dis - near_dis); 
-            m_orthoProjection[4, 3] = (near_dis + far_dis) / (near_dis - far_dis);
+            m_orthoProjection[3, 3] = 2 / (near_dis - far_dis); 
+            m_orthoProjection[4, 3] = (near_dis + far_dis) / (far_dis - near_dis);
             m_orthoProjection[4, 4] = 1;
 
             m_perspectiveProjection = new Matrix4x4();
             m_perspectiveProjection[1, 1] = 2 * near_dis / near_width;
-            m_perspectiveProjection[2, 2] = -2 * near_dis / near_height;
-            m_perspectiveProjection[3, 3] = (near_dis + far_dis) / (far_dis - near_dis);
+            m_perspectiveProjection[2, 2] = 2 * near_dis / near_height;
+            m_perspectiveProjection[3, 3] = (near_dis + far_dis) / (near_dis - far_dis);
             m_perspectiveProjection[3, 4] = 1;
-            m_perspectiveProjection[4, 3] = 2 * near_dis * far_dis / (near_dis - far_dis);
+            m_perspectiveProjection[4, 3] = 2 * near_dis * far_dis / (far_dis - near_dis);
         }
 
         private void Form1_Load(object sender, EventArgs e)

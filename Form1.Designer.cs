@@ -161,7 +161,7 @@ namespace TestRenderer
             // 
             this.ScaleValue.Location = new System.Drawing.Point(470, 300);
             this.ScaleValue.Maximum = 250;
-            this.ScaleValue.Minimum = 100;
+            this.ScaleValue.Minimum = 0;
             this.ScaleValue.Name = "ScaleValue";
             this.ScaleValue.Size = new System.Drawing.Size(250, 45);
             this.ScaleValue.TabIndex = 9;
