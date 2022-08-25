@@ -17,6 +17,7 @@ namespace TestRenderer
         Matrix4x4 m_rotationX;//绕X轴旋转矩阵
         Matrix4x4 m_rotationY;//绕Y轴旋转矩阵
         Matrix4x4 m_rotationZ;//绕Z轴旋转矩阵
+        Matrix4x4 m_rotation;
         Matrix4x4 m_view;//将空间坐标变换为摄像机坐标矩阵,即平移矩阵
         Matrix4x4 m_orthoProjection;//正交投影矩阵
         Matrix4x4 m_perspectiveProjection;//透视投影矩阵
@@ -51,7 +52,8 @@ namespace TestRenderer
             SetRotateMatrix(Axis.Y);
             m_rotationZ = new Matrix4x4();
             SetRotateMatrix(Axis.Z);
-
+            m_rotation = new Matrix4x4();
+            m_rotation = m_rotationX.Mul(m_rotationY).Mul(m_rotationZ);
             //反转z轴
             m_view = new Matrix4x4();
             m_view[1, 1] = 1;
@@ -119,7 +121,8 @@ namespace TestRenderer
                 }
 
                 //MVP 矩阵
-                Matrix4x4 M = m_rotationZ.Mul(m_rotationX).Mul(m_rotationY).Mul(m_scale);
+                m_rotation = m_rotationX.Mul(m_rotationY).Mul(m_rotationZ);
+                Matrix4x4 M = m_scale.Mul(m_rotation);
                 Matrix4x4 MV = M.Mul(m_view);
                 Matrix4x4 MVP;
                 if (IsOrtho.Checked)
@@ -146,10 +149,6 @@ namespace TestRenderer
                             vertex_normal[i][j] = (new Vector4(objLoader.mesh.Normal[s.Norm[j]]) * (M.inverseMatrix.transposed)).transTo3D.normalized;
                         world_pos[i][j] = (new Vector4(model_pos[i][j]) * M).transTo3D;
                         ndc_pos[i][j] = (new Vector4(model_pos[i][j]) * MVP).transTo3D;
-                        if(v0.z < 0)
-                        {
-                            Vector2 c = new Vector2();
-                        }
                     }
                 }
                 isReady = true;
