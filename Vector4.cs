@@ -76,5 +76,17 @@ namespace TestRenderer
                     return new Vector3(0, 0, 0);
             }
         }
+
+        public static bool operator ==(Vector4 a, Vector4 b)
+        {
+            return Math.Abs(a.x - b.x) < float.Epsilon
+                && Math.Abs(a.y - b.y) < float.Epsilon
+                && Math.Abs(a.z - b.z) < float.Epsilon
+                && Math.Abs(a.w - b.w) < float.Epsilon;
+        }
+        public static bool operator !=(Vector4 a, Vector4 b)
+        {
+            return !(a == b);
+        }
     }
 }

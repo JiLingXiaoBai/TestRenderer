@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +12,17 @@ namespace TestRenderer
         public const int canvas_height = 400;
         public const int canvas_width = 400;
 
+        static float intensity = 0;
+        static Color color = Color.White;
+
+        static Vector2[]? texture_uv;
+        static Vector3[]? vertex_normal;
+        static Vector3[]? world_pos;
+        static Vector3[]? ndc_pos;
+        static bool useDiffuseTex;
+        static Bitmap? diffuseTex;
+        static float[] zbuffer;
+        static Vector3 light_dir;
 
         private static void TempSwap<T>(ref T a, ref T b)
         {
@@ -74,9 +86,29 @@ namespace TestRenderer
             }
         }
 
-        //二维三角形，从下往上水平画线填充三角形面
-        public static void DrawTriangle1(Vector3[] ndc_pos, Vector2[] uv, bool useDiffuseTex, Bitmap? diffuseTex, Color color, ref Bitmap resBitmap)
+        public static Vector3 Barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 P)
         {
+            Vector3[] s = new Vector3[2];
+            for (int i = 0; i < 2; i++)
+            {
+                s[i] = new Vector3();
+                s[i][0] = C[i] - A[i];
+                s[i][1] = B[i] - A[i];
+                s[i][2] = A[i] - P[i];
+            }
+
+            Vector3 u = Vector3.CrossProduct(s[0], s[1]);
+            if (Math.Abs(u[2]) > float.Epsilon)
+            {
+                return new Vector3(1f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+            }
+            return new Vector3(-1, 1, 1);
+        }
+
+        //FlatLit
+        public static void DrawTriangle1F(ref Bitmap resBitmap)
+        {
+
             int x, y;
             x = Convert.ToInt32(ndc_pos[0].x * canvas_width / 2 + canvas_width / 2);
             y = Convert.ToInt32(ndc_pos[0].y * canvas_height / 2 + canvas_height / 2);
@@ -94,17 +126,17 @@ namespace TestRenderer
             if (t0.y > t1.y)
             {
                 TempSwap(ref t0, ref t1);
-                TempSwap(ref uv[0], ref uv[1]);
+                TempSwap(ref texture_uv[0], ref texture_uv[1]);
             }
             if (t0.y > t2.y)
             {
                 TempSwap(ref t0, ref t2);
-                TempSwap(ref uv[0], ref uv[2]);
+                TempSwap(ref texture_uv[0], ref texture_uv[2]);
             }
             if (t1.y > t2.y)
             { 
                 TempSwap(ref t1, ref t2);
-                TempSwap(ref uv[1], ref uv[2]);
+                TempSwap(ref texture_uv[1], ref texture_uv[2]);
             }
 
 
@@ -121,8 +153,8 @@ namespace TestRenderer
                 IntVector2 A = t0 + (t2 - t0) * alpha;
                 IntVector2 B = second_half ? t1 + (t2 - t1) * beta : t0 + (t1 - t0) * beta;
 
-                Vector2 uvA = uv[0] + (uv[2] - uv[0]) * alpha;
-                Vector2 uvB = second_half ? uv[1] + (uv[2] - uv[1]) * beta : uv[0] + (uv[1] - uv[0]) * beta;
+                Vector2 uvA = texture_uv[0] + (texture_uv[2] - texture_uv[0]) * alpha;
+                Vector2 uvB = second_half ? texture_uv[1] + (texture_uv[2] - texture_uv[1]) * beta : texture_uv[0] + (texture_uv[1] - texture_uv[0]) * beta;
 
                 if (A.x > B.x)
                 {
@@ -154,28 +186,9 @@ namespace TestRenderer
                 }
             }
         }
-
-        public static Vector3 Barycentric(Vector3 A, Vector3 B, Vector3 C, Vector3 P)
-        {
-            Vector3[] s = new Vector3[2];
-            for(int i = 0; i < 2; i++)
-            {
-                s[i] = new Vector3();
-                s[i][0] = C[i] - A[i];
-                s[i][1] = B[i] - A[i];
-                s[i][2] = A[i] - P[i];
-            }
-
-            Vector3 u = Vector3.CrossProduct(s[0], s[1]);
-            if (Math.Abs(u[2]) > float.Epsilon)
-            {
-                return new Vector3(1f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
-            }
-            return new Vector3(-1, 1, 1);
-        }
-
-        public static void DrawTriangle2(Vector3[] ndc_pos, Vector2[] uv, bool useDiffuseTex, Bitmap? baseTexture, float[] zbuffer, Color color, ref Bitmap bitmap)
-        {
+        //FlatLit
+        public static void DrawTriangle2F(ref Bitmap bitmap)
+        { 
             Vector2 bboxmin = new Vector2(float.MaxValue,float.MaxValue);
             Vector2 bboxmax = new Vector2(float.MinValue,float.MinValue);
             Vector2 clamp = new Vector2(bitmap.Width - 1, bitmap.Height - 1);
@@ -213,14 +226,14 @@ namespace TestRenderer
                     for (int i = 0; i < 3; i++)
                     {
                         p.z += screen_pos[i][2] * bc_screen[i];
-                        uvP += uv[i] * bc_screen[i];
+                        uvP += texture_uv[i] * bc_screen[i];
                     }
                     if (zbuffer[(int)(p.x + p.y * canvas_width)] < p.z)
                     {
                         zbuffer[(int)(p.x + p.y * canvas_width)] = p.z;
-                        if(useDiffuseTex && baseTexture != null)
+                        if(useDiffuseTex && diffuseTex != null)
                         {
-                            Color texColor = baseTexture.GetPixel((int)(uvP.x * baseTexture.Width), (int)((1 - uvP.y) * baseTexture.Height));
+                            Color texColor = diffuseTex.GetPixel((int)(uvP.x * diffuseTex.Width), (int)((1 - uvP.y) * diffuseTex.Height));
                             Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
                             if (p.y == 0) return;
                             bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
@@ -235,17 +248,65 @@ namespace TestRenderer
                 }
             }
         }
-
-        public static void DrawTrangle(Vector3[] ndc_pos, Vector2[] texture_uv, bool useDiffueTex, Bitmap? baseTexture, bool useZBuffer, float[] zbuffer, Color color, ref Bitmap bitmap)
+        //VertexLit
+        public static void DrawTriangle1V(ref Bitmap resBitmap)
         {
-            if (!useZBuffer)
+
+        }
+        //VertexLit
+        public static void DrawTriangle2V(ref Bitmap resBitmap)
+        {
+
+        }
+        public static void DrawTrangle(bool useZBuffer, string lightingType, ref Bitmap bitmap)
+        {
+
+            switch (lightingType)
             {
-                DrawTriangle1(ndc_pos, texture_uv, useDiffueTex, baseTexture, color, ref bitmap);
+                case "IsFlatLit":
+                    Vector3 n = Vector3.CrossProduct(world_pos[2] - world_pos[0], world_pos[1] - world_pos[0]);
+                    intensity = Vector3.DotProduct(n.normalized, light_dir);
+                    //背面剔除
+                    if (intensity < 0) return;
+                    int gray = Convert.ToInt32(intensity * 255);
+                    color = Color.FromArgb(gray, gray, gray);
+
+                    if (!useZBuffer)
+                    {
+                        DrawTriangle1F(ref bitmap);
+                    }
+                    else
+                    {
+                        DrawTriangle2F(ref bitmap);
+                    }
+                    break;
+                case "IsVertexLit":
+                    if (!useZBuffer)
+                    {
+                        DrawTriangle1V(ref bitmap);
+                    }
+                    else
+                    {
+                        DrawTriangle2V(ref bitmap);
+                    }
+                    break;
+                case "IsPixelLit":
+                    break;
+                default:
+                    return;
             }
-            else
-            {
-                DrawTriangle2(ndc_pos, texture_uv, useDiffueTex, baseTexture, zbuffer, color, ref bitmap);
-            }
+        }
+
+        public static void SetData(Vector3[] world_pos, Vector3[] ndc_pos, Vector3[] vertex_normal, Vector2[] texture_uv, bool useDiffuseTex, Bitmap? diffuseTex, float[] zbuffer, Vector3 light_dir)
+        {
+            Canvas.world_pos = world_pos;
+            Canvas.ndc_pos = ndc_pos;
+            Canvas.vertex_normal = vertex_normal;
+            Canvas.texture_uv = texture_uv;
+            Canvas.diffuseTex = diffuseTex;
+            Canvas.zbuffer = zbuffer;
+            Canvas.light_dir = light_dir;
+            Canvas.useDiffuseTex = useDiffuseTex;
         }
     }
 }

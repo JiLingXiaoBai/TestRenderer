@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TestRenderer
 {
@@ -19,7 +20,7 @@ namespace TestRenderer
         Matrix4x4 m_view;//将空间坐标变换为摄像机坐标矩阵,即平移矩阵
         Matrix4x4 m_orthoProjection;//正交投影矩阵
         Matrix4x4 m_perspectiveProjection;//透视投影矩阵
-        LightingType lightingType = LightingType.Flat;
+        string lightingType = "IsFlatLit";
         bool isReady = false;
 
         float near_dis = 500;
@@ -30,17 +31,18 @@ namespace TestRenderer
         Vector3[][][]? lineVertNDC_pos;
         Vector2[][]? texture_uv;
         Vector3[][]? model_pos;
+        Vector3[][]? vertex_normal;
         Vector3[][]? world_pos;
         Vector3[][]? ndc_pos;
-
 
         public Form1()
         {
             InitializeComponent();
+          
             m_scale = new Matrix4x4();
-            m_scale[1, 1] = ScaleValue.Value;
-            m_scale[2, 2] = ScaleValue.Value;
-            m_scale[3, 3] = ScaleValue.Value;
+            m_scale[1, 1] = ScaleValue.Value * ScaleValueX.Value / 100f;
+            m_scale[2, 2] = ScaleValue.Value * ScaleValueY.Value / 100f;
+            m_scale[3, 3] = ScaleValue.Value * ScaleValueZ.Value / 100f;
             m_scale[4, 4] = 1;
 
             m_rotationX = new Matrix4x4();
@@ -97,6 +99,7 @@ namespace TestRenderer
                     lineVertNDC_pos = new Vector3[objLoader.triangleCount][][];
                     texture_uv = new Vector2[objLoader.triangleCount][];
                     model_pos = new Vector3[objLoader.triangleCount][];
+                    vertex_normal = new Vector3[objLoader.triangleCount][];
                     ndc_pos = new Vector3[objLoader.triangleCount][];
                     world_pos = new Vector3[objLoader.triangleCount][];
 
@@ -104,6 +107,7 @@ namespace TestRenderer
                     {
                         texture_uv[i] = new Vector2[3];
                         model_pos[i] = new Vector3[3];
+                        vertex_normal[i] = new Vector3[3];
                         ndc_pos[i] = new Vector3[3];
                         world_pos[i] = new Vector3[3];
                         lineVertNDC_pos[i] = new Vector3[3][];
@@ -136,8 +140,16 @@ namespace TestRenderer
                         lineVertNDC_pos[i][j][1] = (new Vector4(v1) * MVP).transTo3D;
                         texture_uv[i][j] = objLoader.mesh.Texture[s.Tex[j]];
                         model_pos[i][j] = objLoader.mesh.Vertex[s.Vert[j]];
+                        if (m_scale[1, 1] == m_scale[2, 2] && m_scale[1, 1] == m_scale[3, 3])
+                            vertex_normal[i][j] = (new Vector4(objLoader.mesh.Normal[s.Norm[j]]) * M).transTo3D.normalized;
+                        else
+                            vertex_normal[i][j] = (new Vector4(objLoader.mesh.Normal[s.Norm[j]]) * (M.inverseMatrix.transposed)).transTo3D.normalized;
                         world_pos[i][j] = (new Vector4(model_pos[i][j]) * M).transTo3D;
                         ndc_pos[i][j] = (new Vector4(model_pos[i][j]) * MVP).transTo3D;
+                        if(v0.z < 0)
+                        {
+                            Vector2 c = new Vector2();
+                        }
                     }
                 }
                 isReady = true;
@@ -167,32 +179,10 @@ namespace TestRenderer
                 }
                 else
                 {
-                    float intensity = 0;
-                    Color color = Color.White;
-
                     for (int i = 0; i < objLoader.triangleCount; i++)
-                    { 
-                        switch (lightingType)
-                        {
-                            case LightingType.Flat:
-                                Vector3 n = Vector3.CrossProduct(world_pos[i][2] - world_pos[i][0], world_pos[i][1] - world_pos[i][0]);
-                                intensity = Vector3.DotProduct(n.normalized, light_dir);
-                                break;
-                            case LightingType.Vertex:
-                                break;
-                            case LightingType.Pixel:
-                                break;
-                            default:
-                                return;
-                        }
-
-                        //背面剔除
-                        if (intensity > 0)
-                        {
-                            int gray = Convert.ToInt32(intensity * 255);
-                            color = Color.FromArgb(gray, gray, gray);
-                            Canvas.DrawTrangle(ndc_pos[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, IsZBuffer.Checked, zbuffer, color, ref bitmap);
-                        }
+                    {
+                        Canvas.SetData(world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, zbuffer, light_dir);
+                        Canvas.DrawTrangle(IsZBuffer.Checked, lightingType, ref bitmap);
                     }
                 }
             }
@@ -252,39 +242,50 @@ namespace TestRenderer
 
         private void ScaleValue_Scroll(object sender, EventArgs e)
         {
-            for (int i = 1; i <= 3; i++)
-            {
-                m_scale[i, i] = ScaleValue.Value;
-            }
+            m_scale[1, 1] = ScaleValue.Value * ScaleValueX.Value / 100f;
+            m_scale[2, 2] = ScaleValue.Value * ScaleValueY.Value / 100f;
+            m_scale[3, 3] = ScaleValue.Value * ScaleValueZ.Value / 100f;
+        }
+
+        private void ScaleValueX_Scroll(object sender, EventArgs e)
+        {
+            m_scale[1, 1] = ScaleValue.Value * ScaleValueX.Value / 100f;
+        }
+
+        private void ScaleValueY_Scroll(object sender, EventArgs e)
+        {
+            m_scale[2, 2] = ScaleValue.Value * ScaleValueY.Value / 100f;
+        }
+
+        private void ScaleValueZ_Scroll(object sender, EventArgs e)
+        {
+            m_scale[3, 3] = ScaleValue.Value * ScaleValueZ.Value / 100f;
         }
 
         private void ChangeLightingType(object sender, EventArgs e)
         {
-            for(int i = 0; i < lightingSelect.Items.Count; i++)
+            if (lightingType.Equals(((RadioButton)sender).Name))
             {
-                if(lightingSelect.GetItemCheckState(i) == CheckState.Checked)
-                {
-                    switch (i)
-                    {
-                        case 0:
-                            lightingType = LightingType.Flat; break;
-                        case 1:
-                            lightingType = LightingType.Vertex; break;
-                        case 2:
-                            lightingType = LightingType.Pixel; break;
-                        default:
-                            return;
-                    }
-                }
+                return;
+            }
+            else
+            {
+                //查找上次保存的控件
+                Control[] controls = this.Controls.Find(lightingType, true);
+                ((RadioButton)(controls[0])).Checked = false;
+                lightingType = ((RadioButton)sender).Name;
             }
         }
-    }
 
-    public enum LightingType
-    {
-        Flat,
-        Vertex,
-        Pixel
+        private void ResetAxisScale_Click(object sender, EventArgs e)
+        {
+            ScaleValueX.Value = 100;
+            ScaleValueY.Value = 100;
+            ScaleValueZ.Value = 100;
+            m_scale[1, 1] = ScaleValue.Value * ScaleValueX.Value / 100f;
+            m_scale[2, 2] = ScaleValue.Value * ScaleValueY.Value / 100f;
+            m_scale[3, 3] = ScaleValue.Value * ScaleValueZ.Value / 100f;
+        }
     }
 
     public enum Axis
