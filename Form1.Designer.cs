@@ -36,7 +36,7 @@ namespace TestRenderer
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.IsLine = new System.Windows.Forms.CheckBox();
             this.IsOrtho = new System.Windows.Forms.CheckBox();
-            this.IsZBuffer = new System.Windows.Forms.CheckBox();
+            this.IsBaryCentric = new System.Windows.Forms.CheckBox();
             this.IsDiffuseTex = new System.Windows.Forms.CheckBox();
             this.IsFlatLit = new System.Windows.Forms.RadioButton();
             this.IsVertexLit = new System.Windows.Forms.RadioButton();
@@ -99,18 +99,18 @@ namespace TestRenderer
             this.IsOrtho.Text = "正交投影";
             this.IsOrtho.UseVisualStyleBackColor = true;
             // 
-            // IsZBuffer
+            // IsBaryCentric
             // 
-            this.IsZBuffer.AutoSize = true;
-            this.IsZBuffer.Checked = true;
-            this.IsZBuffer.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.IsZBuffer.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
-            this.IsZBuffer.Location = new System.Drawing.Point(480, 100);
-            this.IsZBuffer.Name = "IsZBuffer";
-            this.IsZBuffer.Size = new System.Drawing.Size(75, 21);
-            this.IsZBuffer.TabIndex = 3;
-            this.IsZBuffer.Text = "深度缓冲";
-            this.IsZBuffer.UseVisualStyleBackColor = true;
+            this.IsBaryCentric.AutoSize = true;
+            this.IsBaryCentric.Checked = true;
+            this.IsBaryCentric.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.IsBaryCentric.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.IsBaryCentric.Location = new System.Drawing.Point(480, 100);
+            this.IsBaryCentric.Name = "IsBaryCentric";
+            this.IsBaryCentric.Size = new System.Drawing.Size(75, 21);
+            this.IsBaryCentric.TabIndex = 3;
+            this.IsBaryCentric.Text = "重心插值";
+            this.IsBaryCentric.UseVisualStyleBackColor = true;
             // 
             // IsDiffuseTex
             // 
@@ -241,7 +241,6 @@ namespace TestRenderer
             this.ScaleValueZ.TabIndex = 15;
             this.ScaleValueZ.Value = 100;
             this.ScaleValueZ.Scroll += new System.EventHandler(this.ScaleValueZ_Scroll);
-            
             // 
             // Form1
             // 
@@ -251,7 +250,7 @@ namespace TestRenderer
             this.Controls.Add(this.ResetAxisScale);
             this.Controls.Add(this.IsLine);
             this.Controls.Add(this.IsOrtho);
-            this.Controls.Add(this.IsZBuffer);
+            this.Controls.Add(this.IsBaryCentric);
             this.Controls.Add(this.IsDiffuseTex);
             this.Controls.Add(this.IsFlatLit);
             this.Controls.Add(this.IsVertexLit);
@@ -287,7 +286,7 @@ namespace TestRenderer
         private System.Windows.Forms.Timer timer1;
         private CheckBox IsLine;
         private CheckBox IsOrtho;
-        private CheckBox IsZBuffer;
+        private CheckBox IsBaryCentric;
         private CheckBox IsDiffuseTex;
         private RadioButton IsFlatLit;
         private RadioButton IsVertexLit;

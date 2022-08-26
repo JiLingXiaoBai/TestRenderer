@@ -181,7 +181,7 @@ namespace TestRenderer
                     for (int i = 0; i < objLoader.triangleCount; i++)
                     {
                         Canvas.SetData(world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, zbuffer, light_dir);
-                        Canvas.DrawTrangle(IsZBuffer.Checked, lightingType, ref bitmap);
+                        Canvas.DrawTrangle(IsBaryCentric.Checked, lightingType, ref bitmap);
                     }
                 }
             }
