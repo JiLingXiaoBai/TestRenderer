@@ -8,7 +8,7 @@ namespace TestRenderer
     public partial class Form1 : Form
     {
         ObjLoader objLoader = new ObjLoader();
-
+        Canvas canvas = new Canvas();
         Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
         float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
         Vector3 light_dir = new Vector3(0, 0, 1);
@@ -28,6 +28,7 @@ namespace TestRenderer
         float far_dis = 1000;
         float near_width = 500;
         float near_height = 500;
+        Vector3? cameraPos = new Vector3();
 
         Vector3[][][]? lineVertNDC_pos;
         Vector2[][]? texture_uv;
@@ -172,7 +173,7 @@ namespace TestRenderer
                     {
                         for (int j = 0; j < 3; j++)
                         {
-                            Canvas.DrawLine(lineVertNDC_pos[i][j][0], lineVertNDC_pos[i][j][1], ref bitmap, Color.Red);
+                            canvas.DrawLine(lineVertNDC_pos[i][j][0], lineVertNDC_pos[i][j][1], ref bitmap, Color.Red);
                         }
                     }
                 }
@@ -180,8 +181,8 @@ namespace TestRenderer
                 {
                     for (int i = 0; i < objLoader.triangleCount; i++)
                     {
-                        Canvas.SetData(world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, zbuffer, light_dir);
-                        Canvas.DrawTrangle(IsBaryCentric.Checked, lightingType, ref bitmap);
+                        canvas.SetData(cameraPos, world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, zbuffer, light_dir);
+                        canvas.DrawTrangle(IsBaryCentric.Checked, lightingType, ref bitmap);
                     }
                 }
             }
