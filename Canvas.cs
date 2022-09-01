@@ -6,9 +6,9 @@ namespace TestRenderer
         public const int canvas_height = 400;
         public const int canvas_width = 400;
 
+        float gloss = 1.5f;
         float intensity = 0;
         Color color = Color.White;
-      
 
         Vector2[]? texture_uv;
         Vector3[]? vertex_normal;
@@ -283,7 +283,7 @@ namespace TestRenderer
             for(int i = 0; i < 3; i++)
             {
                 z[i] = ndc_pos[i].z;
-                ity[i] = Vector3.DotProduct(vertex_normal[i].normalized, light_dir);
+                ity[i] = Vector3.DotProduct(-vertex_normal[i].normalized, light_dir);
             }
 
             //三角形的三个点y值相同，面积为0
@@ -392,7 +392,7 @@ namespace TestRenderer
                 screen_pos[i].x = (ndc_pos[i].x + 1) * canvas_width / 2;
                 screen_pos[i].y = (ndc_pos[i].y + 1) * canvas_height / 2;
                 screen_pos[i].z = ndc_pos[i].z;
-                ity[i] = Vector3.DotProduct(vertex_normal[i].normalized, light_dir);
+                ity[i] = Vector3.DotProduct(-vertex_normal[i].normalized, light_dir);
                 for (int j = 0; j < 2; j++)
                 {
                     bboxmin[j] = Math.Max(0f, Math.Min(bboxmin[j], screen_pos[i][j]));
@@ -418,7 +418,7 @@ namespace TestRenderer
                         uvP = texture_uv[0] * bc_screen.x + texture_uv[1] * bc_screen.y + texture_uv[2] * bc_screen.z;
           
                         intensity = ity[0] * bc_screen.x + ity[1] * bc_screen.y + ity[2] * bc_screen.z;
-                        //if (intensity < 0f) return;
+                     
                         int gray = Convert.ToInt32(Math.Abs(intensity) * 255);
                         color = Color.FromArgb(gray, gray, gray);
 
@@ -441,7 +441,7 @@ namespace TestRenderer
         }
         public void DrawTrangle(bool useBaryCentric, string lightingType, ref Bitmap bitmap)
         {
-            Vector3 n = Vector3.CrossProduct(world_pos[2] - world_pos[0], world_pos[1] - world_pos[0]);
+            Vector3 n = Vector3.CrossProduct(world_pos[1] - world_pos[0], world_pos[2] - world_pos[0]);
             intensity = Vector3.DotProduct(n.normalized, light_dir);
             //背面剔除
             if (intensity < 0) return;
@@ -449,9 +449,14 @@ namespace TestRenderer
             {
                 case "IsFlatLit":
                     
-                    int gray = Convert.ToInt32(intensity * 255);
-
-                    //Vector3 h = 
+                    int diffuse = Convert.ToInt32(intensity * 255);
+                    Vector3 view_dir = (camPos - (world_pos[0] * 1/3 + world_pos[1] * 1/3 + world_pos[2] * 1/3)).normalized;
+                    Vector3 h = (light_dir + view_dir).normalized;
+                    float dot_nh = Math.Max(0, Vector3.DotProduct(n.normalized, h));
+                    float exp = (float)Math.Pow(dot_nh, gloss);
+                    int specular = Convert.ToInt32(exp * 255);
+                    int res = Math.Clamp(specular + diffuse, 0, 255);
+                    color = Color.FromArgb(res, res, res);
                     if (!useBaryCentric)
                     {
                         DrawTriangle1F(ref bitmap);
