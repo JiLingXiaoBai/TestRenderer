@@ -351,7 +351,7 @@ namespace TestRenderer
 
                     if (P.x >= 0 && P.x < canvas_width && P.y > 0 && P.y < canvas_height)
                     {
-                        int gray = Convert.ToInt32(Math.Abs(ityP) * 255);
+                        int gray = Convert.ToInt32((ityP + 1) * 0.5 * 255);
                         color = Color.FromArgb(gray, gray, gray);
 
                         if (zbuffer[P.x + P.y * canvas_width] < zP)
@@ -419,7 +419,7 @@ namespace TestRenderer
           
                         intensity = ity[0] * bc_screen.x + ity[1] * bc_screen.y + ity[2] * bc_screen.z;
                      
-                        int gray = Convert.ToInt32(Math.Abs(intensity) * 255);
+                        int gray = Convert.ToInt32((intensity + 1) * 0.5 * 255);
                         color = Color.FromArgb(gray, gray, gray);
 
                         if (useDiffuseTex && diffuseTex != null)
@@ -442,7 +442,9 @@ namespace TestRenderer
         public void DrawTrangle(bool useBaryCentric, string lightingType, ref Bitmap bitmap)
         {
             Vector3 n = Vector3.CrossProduct(world_pos[1] - world_pos[0], world_pos[2] - world_pos[0]);
-            intensity = Vector3.DotProduct(n.normalized, light_dir);
+            float ity = Vector3.DotProduct(n.normalized, light_dir);
+            //半兰伯特模型
+            intensity = ity * 0.8f + 0.2f;
             //背面剔除
             if (intensity < 0) return;
             switch (lightingType)
