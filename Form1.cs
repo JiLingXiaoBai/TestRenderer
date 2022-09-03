@@ -11,7 +11,7 @@ namespace TestRenderer
         Canvas canvas = new Canvas();
         Bitmap bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
         float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
-        Vector3 light_dir = new Vector3(0, 0, -1);
+        Vector3 light_dir = new Vector3(0, 0, 1);
 
         Matrix4x4 m_scale;//Ëõ·Å¾ØÕó
         Matrix4x4 m_rotationX;//ÈÆXÖáĞı×ª¾ØÕó

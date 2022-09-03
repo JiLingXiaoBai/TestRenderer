@@ -6,8 +6,7 @@ namespace TestRenderer
         public const int canvas_height = 400;
         public const int canvas_width = 400;
 
-        float gloss = 1.5f;
-        float intensity = 0;
+        float gloss = 80f;
         Color color = Color.White;
 
         Vector2[]? texture_uv;
@@ -191,7 +190,7 @@ namespace TestRenderer
                             {
                                 Vector2 uvP = uvA + (uvB - uvA) * phi;
                                 Color texColor = diffuseTex.GetPixel((int)Math.Floor(uvP.x * diffuseTex.Width), (int)Math.Floor((1 - uvP.y) * diffuseTex.Height));
-                                Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                                Color resColor = ColorProduct(color, texColor);
                                 resBitmap.SetPixel((int)P.x, (int)(canvas_height - P.y), resColor);
                             }
                             else
@@ -249,7 +248,7 @@ namespace TestRenderer
                         if (useDiffuseTex && diffuseTex != null)
                         {
                             Color texColor = diffuseTex.GetPixel((int)(uvP.x * diffuseTex.Width), (int)((1 - uvP.y) * diffuseTex.Height));
-                            Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                            Color resColor = ColorProduct(color, texColor);
                             if (p.y == 0) return;
                             bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
                         }
@@ -278,12 +277,17 @@ namespace TestRenderer
             IntVector2 t2 = new IntVector2(x, y);
 
             float[] z = new float[3];
-            float[] ity = new float[3];
-
+            float[] ity_diffuse = new float[3];
+            float[] ity_specular = new float[3];
             for(int i = 0; i < 3; i++)
             {
                 z[i] = ndc_pos[i].z;
-                ity[i] = Vector3.DotProduct(-vertex_normal[i].normalized, light_dir);
+                ity_diffuse[i] = Vector3.DotProduct(vertex_normal[i].normalized, light_dir);
+
+                Vector3 view_dir = (world_pos[i] - camPos).normalized;
+                Vector3 h = (light_dir + view_dir).normalized;
+                float dot_nh = Math.Max(0, Vector3.DotProduct(vertex_normal[i].normalized, h));
+                ity_specular[i] = (float)Math.Pow(dot_nh, gloss);
             }
 
             //三角形的三个点y值相同，面积为0
@@ -294,21 +298,24 @@ namespace TestRenderer
                 TempSwap(ref t0, ref t1);
                 TempSwap(ref texture_uv[0], ref texture_uv[1]);
                 TempSwap(ref z[0], ref z[1]);
-                TempSwap(ref ity[0], ref ity[1]);
+                TempSwap(ref ity_diffuse[0], ref ity_diffuse[1]);
+                TempSwap(ref ity_specular[0], ref ity_specular[1]);
             }
             if (t0.y > t2.y)
             {
                 TempSwap(ref t0, ref t2);
                 TempSwap(ref texture_uv[0], ref texture_uv[2]);
                 TempSwap(ref z[0], ref z[2]);
-                TempSwap(ref ity[0], ref ity[2]);
+                TempSwap(ref ity_diffuse[0], ref ity_diffuse[2]);
+                TempSwap(ref ity_specular[0], ref ity_specular[2]);
             }
             if (t1.y > t2.y)
             {
                 TempSwap(ref t1, ref t2);
                 TempSwap(ref texture_uv[1], ref texture_uv[2]);
                 TempSwap(ref z[1], ref z[2]);
-                TempSwap(ref ity[1], ref ity[2]);
+                TempSwap(ref ity_diffuse[1], ref ity_diffuse[2]);
+                TempSwap(ref ity_specular[1], ref ity_specular[2]);
             }
 
 
@@ -331,15 +338,19 @@ namespace TestRenderer
                 float zA = z[0] + (z[2] - z[0]) * alpha;
                 float zB = second_half ? z[1] + (z[2] - z[1]) * beta : z[0] + (z[1] - z[0]) * beta;
 
-                float ityA = ity[0] + (ity[2] - ity[0]) * alpha;
-                float ityB = second_half ? ity[1] + (ity[2] - ity[1]) * beta : ity[0] + (ity[1] - ity[0]) * beta;
+                float ity_diffuseA = ity_diffuse[0] + (ity_diffuse[2] - ity_diffuse[0]) * alpha;
+                float ity_diffuseB = second_half ? ity_diffuse[1] + (ity_diffuse[2] - ity_diffuse[1]) * beta : ity_diffuse[0] + (ity_diffuse[1] - ity_diffuse[0]) * beta;
+
+                float ity_specularA = ity_specular[0] + (ity_specular[2] - ity_specular[0]) * alpha;
+                float ity_specularB = second_half ? ity_specular[1] + (ity_specular[2] - ity_specular[1]) * beta : ity_specular[0] + (ity_specular[1] - ity_specular[0]) * beta;
 
                 if (A.x > B.x)
                 {
                     TempSwap(ref A, ref B);
                     TempSwap(ref uvA, ref uvB);
                     TempSwap(ref zA, ref zB);
-                    TempSwap(ref ityA, ref ityB);
+                    TempSwap(ref ity_diffuseA, ref ity_diffuseB);
+                    TempSwap(ref ity_specularA, ref ity_specularB);
                 }
 
                 for (int j = A.x; j <= B.x; j++)
@@ -347,12 +358,14 @@ namespace TestRenderer
                     float phi = B.x == A.x ? 1f : (float)(j - A.x) / (float)(B.x - A.x);
                     IntVector2 P = A + (B - A) * phi;
                     float zP = zA + (zB - zA) * phi;
-                    float ityP = ityA + (ityB - ityA) * phi;
+                    float ity_diffuseP = ity_diffuseA + (ity_diffuseB - ity_diffuseA) * phi;
+                    float ity_specularP = ity_specularA + (ity_specularB - ity_specularA) * phi;
 
                     if (P.x >= 0 && P.x < canvas_width && P.y > 0 && P.y < canvas_height)
                     {
-                        int gray = Convert.ToInt32((ityP + 1) * 0.5 * 255);
-                        color = Color.FromArgb(gray, gray, gray);
+                        float intensity = (ity_diffuseP + ity_specularP) * 0.5f + 0.5f;
+                        int res = Math.Clamp(Convert.ToInt32(intensity * 255), 0, 255);
+                        color = Color.FromArgb(res, res, res);
 
                         if (zbuffer[P.x + P.y * canvas_width] < zP)
                         {
@@ -361,7 +374,7 @@ namespace TestRenderer
                             {
                                 Vector2 uvP = uvA + (uvB - uvA) * phi;
                                 Color texColor = diffuseTex.GetPixel((int)Math.Floor(uvP.x * diffuseTex.Width), (int)Math.Floor((1 - uvP.y) * diffuseTex.Height));
-                                Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                                Color resColor = ColorProduct(color, texColor);
                                 resBitmap.SetPixel((int)P.x, (int)(canvas_height - P.y), resColor);
                             }
                             else
@@ -380,8 +393,8 @@ namespace TestRenderer
             Vector2 bboxmax = new Vector2(float.MinValue, float.MinValue);
             Vector2 clamp = new Vector2(bitmap.Width - 1, bitmap.Height - 1);
             Vector3[] screen_pos = new Vector3[3];
-            float[] ity = new float[3];
-            
+            float[] ity_diffuse = new float[3];
+            float[] ity_specular = new float[3];
             for (int i = 0; i < 3; i++)
             {
                 //bboxmin.x = Math.Max(0f, Math.Min(bboxmin.x, vertexPos[i].x));
@@ -392,12 +405,18 @@ namespace TestRenderer
                 screen_pos[i].x = (ndc_pos[i].x + 1) * canvas_width / 2;
                 screen_pos[i].y = (ndc_pos[i].y + 1) * canvas_height / 2;
                 screen_pos[i].z = ndc_pos[i].z;
-                ity[i] = Vector3.DotProduct(-vertex_normal[i].normalized, light_dir);
                 for (int j = 0; j < 2; j++)
                 {
                     bboxmin[j] = Math.Max(0f, Math.Min(bboxmin[j], screen_pos[i][j]));
                     bboxmax[j] = Math.Min(clamp[j], Math.Max(bboxmax[j], screen_pos[i][j]));
                 }
+
+                ity_diffuse[i] = Vector3.DotProduct(vertex_normal[i].normalized, light_dir);
+                Vector3 view_dir = (world_pos[i] - camPos).normalized;
+                Vector3 h = (light_dir + view_dir).normalized;
+                float dot_nh = Math.Max(0, Vector3.DotProduct(vertex_normal[i].normalized, h));
+                ity_specular[i] = (float)Math.Pow(dot_nh, gloss);
+
             }
 
             Vector3 p = new Vector3();
@@ -416,16 +435,18 @@ namespace TestRenderer
                         zbuffer[(int)(p.x + p.y * canvas_width)] = p.z;
 
                         uvP = texture_uv[0] * bc_screen.x + texture_uv[1] * bc_screen.y + texture_uv[2] * bc_screen.z;
-          
-                        intensity = ity[0] * bc_screen.x + ity[1] * bc_screen.y + ity[2] * bc_screen.z;
-                     
-                        int gray = Convert.ToInt32((intensity + 1) * 0.5 * 255);
-                        color = Color.FromArgb(gray, gray, gray);
+
+                        float ity_diffuseP = ity_diffuse[0] * bc_screen.x + ity_diffuse[1] * bc_screen.y + ity_diffuse[2] * bc_screen.z;
+                        float ity_specularP = ity_specular[0] * bc_screen.x + ity_specular[1] * bc_screen.y + ity_specular[2] * bc_screen.z;
+
+                        float intensity = (ity_diffuseP + ity_specularP) * 0.5f + 0.5f;
+                        int res = Math.Clamp(Convert.ToInt32(intensity * 255), 0, 255);
+                        color = Color.FromArgb(res, res, res);
 
                         if (useDiffuseTex && diffuseTex != null)
                         {
                             Color texColor = diffuseTex.GetPixel((int)(uvP.x * diffuseTex.Width), (int)((1 - uvP.y) * diffuseTex.Height));
-                            Color resColor = Color.FromArgb(color.R * texColor.R / 255, color.G * texColor.G / 255, color.B * texColor.B / 255);
+                            Color resColor = ColorProduct(color, texColor);
                             if (p.y == 0) return;
                             bitmap.SetPixel(Convert.ToInt16(p.x), Convert.ToInt16(canvas_height - p.y), resColor);
                         }
@@ -441,23 +462,19 @@ namespace TestRenderer
         }
         public void DrawTrangle(bool useBaryCentric, string lightingType, ref Bitmap bitmap)
         {
-            Vector3 n = Vector3.CrossProduct(world_pos[1] - world_pos[0], world_pos[2] - world_pos[0]);
-            float ity = Vector3.DotProduct(n.normalized, light_dir);
-            //半兰伯特模型
-            intensity = ity * 0.8f + 0.2f;
+            Vector3 n = Vector3.CrossProduct(world_pos[2] - world_pos[0], world_pos[1] - world_pos[0]);
+            float diffuse = Vector3.DotProduct(n.normalized, light_dir);
             //背面剔除
-            if (intensity < 0) return;
+            if (diffuse < 0) return;
             switch (lightingType)
             {
                 case "IsFlatLit":
-                    
-                    int diffuse = Convert.ToInt32(intensity * 255);
-                    Vector3 view_dir = (camPos - (world_pos[0] * 1/3 + world_pos[1] * 1/3 + world_pos[2] * 1/3)).normalized;
+                    Vector3 view_dir = ((world_pos[0] * 1/3 + world_pos[1] * 1/3 + world_pos[2] * 1/3) - camPos).normalized; //由于z轴反转，view_dir也反转
                     Vector3 h = (light_dir + view_dir).normalized;
                     float dot_nh = Math.Max(0, Vector3.DotProduct(n.normalized, h));
-                    float exp = (float)Math.Pow(dot_nh, gloss);
-                    int specular = Convert.ToInt32(exp * 255);
-                    int res = Math.Clamp(specular + diffuse, 0, 255);
+                    float specular = (float)Math.Pow(dot_nh, gloss);
+                    float intensity = (diffuse + specular) * 0.8f + 0.2f;
+                    int res = Math.Clamp(Convert.ToInt32(intensity * 255), 0, 255);
                     color = Color.FromArgb(res, res, res);
                     if (!useBaryCentric)
                     {
@@ -496,6 +513,11 @@ namespace TestRenderer
             this.zbuffer = zbuffer;
             this.light_dir = light_dir;
             this.useDiffuseTex = useDiffuseTex;
+        }
+
+        private Color ColorProduct(Color A, Color B)
+        {
+            return Color.FromArgb(A.R * B.R / 255, A.G * B.G /255, A.B * B.B /255);
         }
     }
 }
