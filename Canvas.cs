@@ -420,7 +420,7 @@ namespace TestRenderer
             }
 
             Vector3 p = new Vector3();
-            Vector2 uvP = new Vector2();
+            Vector2 uvP;
             for (p.x = (int)Math.Ceiling(bboxmin.x); p.x <= (int)Math.Floor(bboxmax.x); p.x++)
             {
                 for (p.y = (int)Math.Ceiling(bboxmin.y); p.y <= (int)Math.Floor(bboxmax.y); p.y++)
@@ -460,6 +460,17 @@ namespace TestRenderer
                 }
             }
         }
+
+        public void DrawTriangle1P(ref Bitmap resBitmap)
+        {
+
+        }
+
+        public void DrawTriangle2P(ref Bitmap bitmap)
+        {
+
+        }
+
         public void DrawTrangle(bool useBaryCentric, string lightingType, ref Bitmap bitmap)
         {
             Vector3 n = Vector3.CrossProduct(world_pos[2] - world_pos[0], world_pos[1] - world_pos[0]);
@@ -496,6 +507,14 @@ namespace TestRenderer
                     }
                     break;
                 case "IsPixelLit":
+                    if (!useBaryCentric)
+                    {
+                        DrawTriangle1P(ref bitmap);
+                    }
+                    else
+                    {
+                        DrawTriangle2P(ref bitmap);
+                    }
                     break;
                 default:
                     return;
