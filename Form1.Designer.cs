@@ -1,6 +1,4 @@
-﻿using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
-
+﻿
 namespace TestRenderer
 {
     partial class Form1

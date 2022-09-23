@@ -76,6 +76,7 @@ namespace TestRenderer
             m_perspectiveProjection[3, 3] = (near_dis + far_dis) / (near_dis - far_dis);
             m_perspectiveProjection[3, 4] = 1;
             m_perspectiveProjection[4, 3] = 2 * near_dis * far_dis / (far_dis - near_dis);
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -110,7 +111,7 @@ namespace TestRenderer
                     {
                         texture_uv[i] = new Vector2[3];
                         model_pos[i] = new Vector3[3];
-                        vertex_normal[i] = new Vector3[3];
+                        vertex_normal[i] = new Vector3[3];;
                         ndc_pos[i] = new Vector3[3];
                         world_pos[i] = new Vector3[3];
                         lineVertNDC_pos[i] = new Vector3[3][];
@@ -152,6 +153,7 @@ namespace TestRenderer
                         ndc_pos[i][j] = (new Vector4(model_pos[i][j]) * MVP).transTo3D;
                     }
                 }
+
                 isReady = true;
                 this.Invalidate();
             }
@@ -181,7 +183,7 @@ namespace TestRenderer
                 {
                     for (int i = 0; i < objLoader.triangleCount; i++)
                     {
-                        canvas.SetData(cameraPos, world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, zbuffer, light_dir);
+                        canvas.SetData(cameraPos, world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, objLoader.normalTexture, zbuffer, light_dir);
                         canvas.DrawTrangle(IsBaryCentric.Checked, lightingType, ref bitmap);
                     }
                 }

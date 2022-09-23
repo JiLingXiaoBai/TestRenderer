@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace TestRenderer
 {
     internal class ObjLoader
@@ -32,6 +27,7 @@ namespace TestRenderer
         private string? fileName = null;
         public Model? mesh = null;
         public Bitmap? baseTexture = null;
+        public Bitmap? normalTexture = null;
 
         public void LoadObjFile(String fileName)
         {
@@ -114,6 +110,7 @@ namespace TestRenderer
                 mesh = model;
             }
             baseTexture = GetBaseTexture();
+            normalTexture = GetNormalTexture();
         }
 
         public int triangleCount
@@ -122,6 +119,16 @@ namespace TestRenderer
             {
                 if (mesh != null)
                     return mesh.Surfaces.Count;
+                return 0;
+            }
+        }
+
+        public int VertexCount
+        {
+            get
+            {
+                if(mesh != null)
+                    return mesh.Vertex.Count;
                 return 0;
             }
         }
@@ -138,6 +145,27 @@ namespace TestRenderer
                 return diffuse;
             }
             catch(System.IO.FileNotFoundException e)
+            {
+                if (e.Source != null)
+                    Console.WriteLine("IOException source: {0}", e.Source);
+                return null;
+                throw;
+            }
+
+        }
+
+        public Bitmap? GetNormalTexture()
+        {
+            if (fileName == null)
+                return null;
+            char[] chars = { '.', 'o', 'b', 'j' };
+            string textureName = fileName.TrimEnd(chars) + "_nm_tangent.png";
+            try
+            {
+                Bitmap? diffuse = Bitmap.FromFile(textureName) as Bitmap;
+                return diffuse;
+            }
+            catch (System.IO.FileNotFoundException e)
             {
                 if (e.Source != null)
                     Console.WriteLine("IOException source: {0}", e.Source);

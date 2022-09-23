@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using System.Runtime.CompilerServices;
 
 namespace TestRenderer
 {
@@ -243,6 +240,34 @@ namespace TestRenderer
             }
 
             return result;
+        }
+
+
+        /// 三维矩阵重正交化后扩展至四维矩阵
+        public Matrix4x4 ReNormalized(Matrix4x4 matrix)
+        {
+            Vector3 a1 = new Vector3(matrix[1, 1], matrix[1, 2], matrix[1, 3]);
+            Vector3 a2 = new Vector3(matrix[2, 1], matrix[2, 2], matrix[2, 3]);
+            Vector3 a3 = new Vector3(matrix[3, 1], matrix[3, 2], matrix[3, 3]);
+
+            Vector3 b1 = a1;
+            Vector3 e1 = b1 / b1.magnitude;
+            Vector3 b2 = a2 - Vector3.DotProduct(a2, e1) * e1;
+            Vector3 e2 = b2 / b2.magnitude;
+            Vector3 b3 = a3 - Vector3.DotProduct(a3, e2) * e2 - Vector3.DotProduct(a3, e1) * e1;
+            Vector3 e3 = b3 / b3.magnitude;
+
+            Matrix4x4 res = new Matrix4x4();
+            res[1, 1] = e1.x; res[1, 2] = e1.y; res[1, 3] = e1.z;
+            res[2, 1] = e2.x; res[2, 2] = e2.y; res[2, 3] = e2.z;
+            res[3, 1] = e3.x; res[3, 2] = e3.y; res[3, 3] = e3.z;
+            res[4, 4] = 1;
+            return res;
+        }
+
+        public Matrix4x4 reNormalized
+        {
+            get { return ReNormalized(this); }
         }
     }
 }
