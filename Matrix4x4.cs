@@ -11,12 +11,12 @@ namespace TestRenderer
             pts = new float[4, 4];
         }
 
-        public float this[int i, int j] 
+        public float this[int i, int j]
         {
             get { return pts[i - 1, j - 1]; }
             set { pts[i - 1, j - 1] = value; }
         }
-        
+
 
         public Matrix4x4 Mul(Matrix4x4 m)
         {
@@ -56,9 +56,9 @@ namespace TestRenderer
         public static Matrix4x4 Transpose(Matrix4x4 m)
         {
             Matrix4x4 transposeMatrix = new Matrix4x4();
-            for(int i = 1; i <= 4; i++)
+            for (int i = 1; i <= 4; i++)
             {
-                for(int j = 1; j <=4; j++)
+                for (int j = 1; j <= 4; j++)
                 {
                     transposeMatrix[i, j] = m[j, i];
                 }
@@ -73,7 +73,8 @@ namespace TestRenderer
 
         static Matrix4x4 IdentityMatrix4x4
         {
-            get {
+            get
+            {
                 Matrix4x4 matrix = new Matrix4x4();
                 matrix[1, 1] = 1;
                 matrix[2, 2] = 1;
@@ -138,7 +139,8 @@ namespace TestRenderer
         /// <returns></returns>
         public Matrix4x4 inverseMatrix
         {
-            get{
+            get
+            {
                 if (isOrtho)
                     return transposed;
 
@@ -163,7 +165,7 @@ namespace TestRenderer
 
                 return new Matrix4x4(result);
             }
-            
+
         }
 
         /// <summary>
@@ -185,9 +187,9 @@ namespace TestRenderer
             for (int i = 0; i < n; i++)
             {
                 BlockCofactor(matrix, ref matrixTemp, 0, i, n);
-         
 
-                dSum += matrix[0, i] * dSign * Determinant(matrixTemp, n-1);
+
+                dSum += matrix[0, i] * dSign * Determinant(matrixTemp, n - 1);
                 dSign = -dSign;
             }
 
@@ -227,7 +229,7 @@ namespace TestRenderer
         {
             int N = matrix.GetLength(0);
             //制作一个伴随矩阵大小的矩阵
-            float[,] result = new float[N, N];            
+            float[,] result = new float[N, N];
             float[,] temp = new float[N, N];
             //生成伴随矩阵
             for (int i = 0; i < N; i++)
@@ -235,7 +237,7 @@ namespace TestRenderer
                 for (int j = 0; j < N; j++)
                 {
                     BlockCofactor(matrix, ref temp, i, j, N);
-                    result[j, i] = ((i + j) % 2 == 0 ? 1 : -1) * Determinant(temp, N - 1);  
+                    result[j, i] = ((i + j) % 2 == 0 ? 1 : -1) * Determinant(temp, N - 1);
                 }
             }
 

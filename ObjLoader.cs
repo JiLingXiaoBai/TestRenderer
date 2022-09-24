@@ -4,8 +4,8 @@ namespace TestRenderer
     internal class ObjLoader
     {
 
-        public class Surface 
-        { 
+        public class Surface
+        {
             public int[] Vert = new int[3];
             public int[] Tex = new int[3];
             public int[] Norm = new int[3];
@@ -14,13 +14,13 @@ namespace TestRenderer
         public class Model
         {
             //代表顶点。格式为V X Y Z，V后面的X Y Z表示三个顶点坐标。浮点型
-            public List<Vector3> Vertex = new List<Vector3>();
+            public List<Vector3> m_Vertex = new List<Vector3>();
             //表示纹理坐标。格式为VT TU TV。浮点型
-            public List<Vector2> Texture = new List<Vector2>();
+            public List<Vector2> m_Texture = new List<Vector2>();
             //法向量。每个三角形的三个顶点都要指定一个法向量。格式为 NX NY NZ。浮点型
-            public List<Vector3> Normal = new List<Vector3>();
+            public List<Vector3> m_Normal = new List<Vector3>();
             //面。面后面跟着的整型值分别是属于这个面的顶点、纹理坐标、法向量的索引。
-            public List<Surface> Surfaces = new List<Surface>();
+            public List<Surface> m_Surfaces = new List<Surface>();
             //面的格式为：f Vertex1/Texture1/Normal1 Vertex2/Texture2/Normal2 Vertex3/Texture3/Normal3
         }
 
@@ -49,7 +49,7 @@ namespace TestRenderer
                         Vector2 vt = new Vector2();
                         vt.x = float.Parse(tempArray[1]);
                         vt.y = float.Parse(tempArray[2]);
-                        model.Texture.Add(vt);
+                        model.m_Texture.Add(vt);
                     }
                     else if (texLineTem.IndexOf("n") == 1)//vn 0.637005 -0.0421857 0.769705 法向量
                     {
@@ -64,7 +64,7 @@ namespace TestRenderer
                         }
                         else vn.z = float.Parse(tempArray[3]);
 
-                        model.Normal.Add(vn);
+                        model.m_Normal.Add(vn);
                     }
                     else
                     {//v -53.0413 158.84 -135.806 点
@@ -73,39 +73,39 @@ namespace TestRenderer
                         v.x = float.Parse(tempArray[1]);
                         v.y = float.Parse(tempArray[2]);
                         v.z = float.Parse(tempArray[3]);
-                        model.Vertex.Add(v);
+                        model.m_Vertex.Add(v);
                     }
                 }
                 else if (texLineTem.IndexOf("f") == 0)
                 {
-                    //f 2443//2656 2442//2656 2444//2656 面
+                    //f 1201/1249/1201 1202/1248/1202 1200/1246/1200 面
                     string[] tempArray = texLineTem.Split(new char[] { '/', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
                     Surface surface = new Surface();
                     int i = 2;
                     int k = 1;
                     while (i >= 0)
                     {
-                        if (model.Vertex.Count() != 0)
+                        if (model.m_Vertex.Count() != 0)
                         {
                             surface.Vert[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (model.Texture.Count() != 0)
+                        if (model.m_Texture.Count() != 0)
                         {
                             surface.Tex[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
-                        if (model.Normal.Count() != 0)
+                        if (model.m_Normal.Count() != 0)
                         {
                             surface.Norm[i] = int.Parse(tempArray[k]) - 1;
                             k++;
                         }
                         i--;
                     }
-                    model.Surfaces.Add(surface);
+                    model.m_Surfaces.Add(surface);
                 }
             }
-            if(model.Vertex.Count != 0)
+            if (model.m_Vertex.Count != 0)
             {
                 mesh = model;
             }
@@ -118,17 +118,17 @@ namespace TestRenderer
             get
             {
                 if (mesh != null)
-                    return mesh.Surfaces.Count;
+                    return mesh.m_Surfaces.Count;
                 return 0;
             }
         }
 
-        public int VertexCount
+        public int vertexCount
         {
             get
             {
-                if(mesh != null)
-                    return mesh.Vertex.Count;
+                if (mesh != null)
+                    return mesh.m_Vertex.Count;
                 return 0;
             }
         }
@@ -144,7 +144,7 @@ namespace TestRenderer
                 Bitmap? diffuse = Bitmap.FromFile(textureName) as Bitmap;
                 return diffuse;
             }
-            catch(System.IO.FileNotFoundException e)
+            catch (System.IO.FileNotFoundException e)
             {
                 if (e.Source != null)
                     Console.WriteLine("IOException source: {0}", e.Source);

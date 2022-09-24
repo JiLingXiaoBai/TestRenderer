@@ -1,8 +1,4 @@
-using System.Drawing;
-using System.Numerics;
-using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-
+ï»¿
 namespace TestRenderer
 {
     public partial class Form1 : Form
@@ -13,14 +9,14 @@ namespace TestRenderer
         float[] zbuffer = new float[Canvas.canvas_width * Canvas.canvas_height];
         Vector3 light_dir = new Vector3(0, 0, 1);
 
-        Matrix4x4 m_scale;//Ëõ·Å¾ØÕó
-        Matrix4x4 m_rotationX;//ÈÆXÖáÐý×ª¾ØÕó
-        Matrix4x4 m_rotationY;//ÈÆYÖáÐý×ª¾ØÕó
-        Matrix4x4 m_rotationZ;//ÈÆZÖáÐý×ª¾ØÕó
+        Matrix4x4 m_scale;
+        Matrix4x4 m_rotationX;
+        Matrix4x4 m_rotationY;
+        Matrix4x4 m_rotationZ;
         Matrix4x4 m_rotation;
-        Matrix4x4 m_view;//½«¿Õ¼ä×ø±ê±ä»»ÎªÉãÏñ»ú×ø±ê¾ØÕó,¼´Æ½ÒÆ¾ØÕó
-        Matrix4x4 m_orthoProjection;//Õý½»Í¶Ó°¾ØÕó
-        Matrix4x4 m_perspectiveProjection;//Í¸ÊÓÍ¶Ó°¾ØÕó
+        Matrix4x4 m_view;
+        Matrix4x4 m_orthoProjection;
+        Matrix4x4 m_perspectiveProjection;
         string lightingType = "IsFlatLit";
         bool isReady = false;
 
@@ -29,18 +25,13 @@ namespace TestRenderer
         float near_width = 500;
         float near_height = 500;
         Vector3? cameraPos = new Vector3();
-
+        List<Triangle> triangles;
         Vector3[][][]? lineVertNDC_pos;
-        Vector2[][]? texture_uv;
-        Vector3[][]? model_pos;
-        Vector3[][]? vertex_normal;
-        Vector3[][]? world_pos;
-        Vector3[][]? ndc_pos;
 
         public Form1()
         {
             InitializeComponent();
-          
+
             m_scale = new Matrix4x4();
             m_scale[1, 1] = ScaleValue.Value * ScaleValueX.Value / 100f;
             m_scale[2, 2] = ScaleValue.Value * ScaleValueY.Value / 100f;
@@ -55,7 +46,7 @@ namespace TestRenderer
             SetRotateMatrix(Axis.Z);
             m_rotation = new Matrix4x4();
             m_rotation = m_rotationX.Mul(m_rotationY).Mul(m_rotationZ);
-            //·´×ªzÖá
+
             m_view = new Matrix4x4();
             m_view[1, 1] = 1;
             m_view[2, 2] = 1;
@@ -66,7 +57,7 @@ namespace TestRenderer
             m_orthoProjection = new Matrix4x4();
             m_orthoProjection[1, 1] = 2 / near_width;
             m_orthoProjection[2, 2] = 2 / near_height;
-            m_orthoProjection[3, 3] = 2 / (near_dis - far_dis); 
+            m_orthoProjection[3, 3] = 2 / (near_dis - far_dis);
             m_orthoProjection[4, 3] = (near_dis + far_dis) / (far_dis - near_dis);
             m_orthoProjection[4, 4] = 1;
 
@@ -77,14 +68,15 @@ namespace TestRenderer
             m_perspectiveProjection[3, 4] = 1;
             m_perspectiveProjection[4, 3] = 2 * near_dis * far_dis / (far_dis - near_dis);
 
+            triangles = new List<Triangle>();
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Multiselect = false;//¸ÃÖµÈ·¶¨ÊÇ·ñ¿ÉÒÔÑ¡Ôñ¶à¸öÎÄ¼þ
-            dialog.Title = "ÇëÑ¡ÔñÎÄ¼þ";
-            dialog.Filter = "Ä£ÐÍÎÄ¼þ(*.obj)|*.obj";
+            dialog.Multiselect = false;
+            dialog.Title = "é€‰æ‹©æ¨¡åž‹";
+            dialog.Filter = "(*.obj)|*.obj";
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string fileName = dialog.FileName;
@@ -101,19 +93,8 @@ namespace TestRenderer
                 if (!isReady)
                 {
                     lineVertNDC_pos = new Vector3[objLoader.triangleCount][][];
-                    texture_uv = new Vector2[objLoader.triangleCount][];
-                    model_pos = new Vector3[objLoader.triangleCount][];
-                    vertex_normal = new Vector3[objLoader.triangleCount][];
-                    ndc_pos = new Vector3[objLoader.triangleCount][];
-                    world_pos = new Vector3[objLoader.triangleCount][];
-
                     for (int i = 0; i < objLoader.triangleCount; i++)
                     {
-                        texture_uv[i] = new Vector2[3];
-                        model_pos[i] = new Vector3[3];
-                        vertex_normal[i] = new Vector3[3];;
-                        ndc_pos[i] = new Vector3[3];
-                        world_pos[i] = new Vector3[3];
                         lineVertNDC_pos[i] = new Vector3[3][];
                         for (int j = 0; j < 3; j++)
                         {
@@ -122,7 +103,7 @@ namespace TestRenderer
                     }
                 }
 
-                //MVP ¾ØÕó
+                //MVP
                 m_rotation = m_rotationX.Mul(m_rotationY).Mul(m_rotationZ);
                 Matrix4x4 M = m_scale.Mul(m_rotation);
                 Matrix4x4 MV = M.Mul(m_view);
@@ -132,26 +113,69 @@ namespace TestRenderer
                 else
                     MVP = MV.Mul(m_perspectiveProjection);
 
+                triangles.Clear();
+
                 for (int i = 0; i < objLoader.triangleCount; i++)
                 {
-                    ObjLoader.Surface s = objLoader.mesh.Surfaces[i];
-
+                    ObjLoader.Surface s = objLoader.mesh.m_Surfaces[i];
+                    Vertex[] tempVertices = new Vertex[3];
                     for (int j = 0; j < 3; j++)
                     {
-                        Vector3 v0 = objLoader.mesh.Vertex[s.Vert[j]];
-                        Vector3 v1 = objLoader.mesh.Vertex[s.Vert[(j + 1) % 3]];
+                        Vector3 v0 = objLoader.mesh.m_Vertex[s.Vert[j]];
+                        Vector3 v1 = objLoader.mesh.m_Vertex[s.Vert[(j + 1) % 3]];
 
                         lineVertNDC_pos[i][j][0] = (new Vector4(v0) * MVP).transTo3D;
                         lineVertNDC_pos[i][j][1] = (new Vector4(v1) * MVP).transTo3D;
-                        texture_uv[i][j] = objLoader.mesh.Texture[s.Tex[j]];
-                        model_pos[i][j] = objLoader.mesh.Vertex[s.Vert[j]];
+
+                        Vertex vert = new Vertex();
+                        vert.texture_uv = objLoader.mesh.m_Texture[s.Tex[j]];
+                        vert.model_pos = objLoader.mesh.m_Vertex[s.Vert[j]];
+                        vert.world_pos = (new Vector4(vert.model_pos) * M).transTo3D;
+                        vert.ndc_pos = (new Vector4(vert.model_pos) * MVP).transTo3D;
+                        vert.vertex_tangent = new Vector3(0, 0, 0);
                         if (m_scale[1, 1] == m_scale[2, 2] && m_scale[1, 1] == m_scale[3, 3])
-                            vertex_normal[i][j] = (new Vector4(objLoader.mesh.Normal[s.Norm[j]]) * M).transTo3D.normalized;
+                            vert.vertex_normal = (new Vector4(objLoader.mesh.m_Normal[s.Norm[j]]) * M).transTo3D.normalized;
                         else
-                            vertex_normal[i][j] = (new Vector4(objLoader.mesh.Normal[s.Norm[j]]) * (M.inverseMatrix.transposed)).transTo3D.normalized;
-                        world_pos[i][j] = (new Vector4(model_pos[i][j]) * M).transTo3D;
-                        ndc_pos[i][j] = (new Vector4(model_pos[i][j]) * MVP).transTo3D;
+                            vert.vertex_normal = (new Vector4(objLoader.mesh.m_Normal[s.Norm[j]]) * (M.inverseMatrix.transposed)).transTo3D.normalized;
+                        tempVertices[j] = vert;
                     }
+                    triangles.Add(new Triangle(tempVertices[0], tempVertices[1], tempVertices[2]));
+                }
+
+                for (int i = 0; i < triangles.Count; i++)
+                {
+                    Vertex v0 = triangles[i].v0;
+                    Vertex v1 = triangles[i].v1;
+                    Vertex v2 = triangles[i].v2;
+
+                    Vector3 edge1 = v1.world_pos - v0.world_pos;
+                    Vector3 edge2 = v2.world_pos - v0.world_pos;
+                    Vector2 deltaUV1 = v1.texture_uv - v0.texture_uv;
+                    Vector2 deltaUV2 = v2.texture_uv - v0.texture_uv;
+
+                    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+
+                    Vector3 tangent = new Vector3();
+
+                    tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+                    tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+                    tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+                    triangles[i].v0.vertex_tangent += tangent;
+                    triangles[i].v1.vertex_tangent += tangent;
+                    triangles[i].v2.vertex_tangent += tangent;
+
+                }
+
+                for (int i = 0; i < triangles.Count; i++)
+                {
+                    Vertex v0 = triangles[i].v0;
+                    Vertex v1 = triangles[i].v1;
+                    Vertex v2 = triangles[i].v2;
+
+                    triangles[i].v0.vertex_tangent = v0.vertex_tangent.normalized;
+                    triangles[i].v1.vertex_tangent = v1.vertex_tangent.normalized;
+                    triangles[i].v2.vertex_tangent = v2.vertex_tangent.normalized;
                 }
 
                 isReady = true;
@@ -169,7 +193,7 @@ namespace TestRenderer
                 }
                 bitmap = new Bitmap(Canvas.canvas_width, Canvas.canvas_height);
 
-                if (IsLine.Checked) //Ïß¿òÄ£Ê½
+                if (IsLine.Checked)
                 {
                     for (int i = 0; i < objLoader.triangleCount; i++)
                     {
@@ -181,14 +205,14 @@ namespace TestRenderer
                 }
                 else
                 {
-                    for (int i = 0; i < objLoader.triangleCount; i++)
+                    for (int i = 0; i < triangles.Count; i++)
                     {
-                        canvas.SetData(cameraPos, world_pos[i], ndc_pos[i], vertex_normal[i], texture_uv[i], IsDiffuseTex.Checked, objLoader.baseTexture, objLoader.normalTexture, zbuffer, light_dir);
+                        canvas.SetData(cameraPos, triangles[i], IsDiffuseTex.Checked, objLoader.baseTexture, objLoader.normalTexture, zbuffer, light_dir);
                         canvas.DrawTrangle(IsBaryCentric.Checked, lightingType, ref bitmap);
                     }
                 }
             }
-            
+
             this.pictureBox1.Image = bitmap;
         }
 
@@ -272,7 +296,6 @@ namespace TestRenderer
             }
             else
             {
-                //²éÕÒÉÏ´Î±£´æµÄ¿Ø¼þ
                 Control[] controls = this.Controls.Find(lightingType, true);
                 ((RadioButton)(controls[0])).Checked = false;
                 lightingType = ((RadioButton)sender).Name;
@@ -292,6 +315,6 @@ namespace TestRenderer
 
     public enum Axis
     {
-        X,Y,Z,
+        X, Y, Z,
     }
 }
