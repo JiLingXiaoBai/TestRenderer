@@ -564,35 +564,34 @@ namespace TestRenderer
                         if (zbuffer[P.x + P.y * canvas_width] < zP)
                         {
                             zbuffer[P.x + P.y * canvas_width] = zP;
+                            Vector2 uvP = uvA + (uvB - uvA) * phi;
+                            Vector3 tbn_normalP = (tbn_normalA + (tbn_normalB - tbn_normalA) * phi).normalized;
+                            Vector3 temp_tangentP = (temp_tangentA + (temp_tangentB - temp_tangentA) * phi).normalized;
+                            Vector3 tbn_tangentP = (temp_tangentP - Vector3.DotProduct(temp_tangentP, tbn_normalP) * tbn_normalP).normalized;
+                            Vector3 tbn_bitangentP = Vector3.CrossProduct(tbn_tangentP, tbn_normalP).normalized;
+                            Matrix4x4 TBN = new Matrix4x4();
+                            TBN[1, 1] = tbn_tangentP.x; TBN[1, 2] = tbn_tangentP.y; TBN[1, 3] = tbn_tangentP.z;
+                            TBN[2, 1] = tbn_bitangentP.x; TBN[2, 2] = tbn_bitangentP.y; TBN[2, 3] = tbn_bitangentP.z;
+                            TBN[3, 1] = tbn_normalP.x; TBN[3, 2] = tbn_normalP.y; TBN[3, 3] = tbn_normalP.z;
+                            TBN[4, 4] = 1;
+
+                            reNormalizedTBN = TBN.reNormalized.transposed;
+
+                            Color normalColor = normalTex.GetPixel((int)(uvP.x * normalTex.Width), (int)((1 - uvP.y) * normalTex.Height));
+                            Vector3 tangentNormal = new Vector3(normalColor.R / 255f, normalColor.G / 255f, normalColor.B / 255f);
+                            Vector3 normal = (new Vector4(tangentNormal.x * 2.0f - 1.0f, tangentNormal.y * 2.0f - 1.0f, tangentNormal.z * 2.0f - 1.0f, 1) * reNormalizedTBN).transTo3D.normalized;
+                            Vector3 hP = hA + (hB - hA) * phi;
+                            float dot_nh = Math.Max(0, Vector3.DotProduct(normal, hP));
+
+                            float ity_diffuseP = Vector3.DotProduct(normal, light_dir);
+                            float ity_specularP = (float)Math.Pow(dot_nh, gloss);
+
+                            float intensity = (ity_diffuseP + ity_specularP) * 0.5f + 0.5f;
+                            int res = Math.Clamp(Convert.ToInt32(intensity * 255), 0, 255);
+                            color = Color.FromArgb(res, res, res);
+
                             if (useDiffuseTex && diffuseTex != null)
                             {
-                                Vector2 uvP = uvA + (uvB - uvA) * phi;
-
-                                Vector3 tbn_normalP = (tbn_normalA + (tbn_normalB - tbn_normalA) * phi).normalized;
-                                Vector3 temp_tangentP = (temp_tangentA + (temp_tangentB - temp_tangentA) * phi).normalized;
-                                Vector3 tbn_tangentP = (temp_tangentP - Vector3.DotProduct(temp_tangentP, tbn_normalP) * tbn_normalP).normalized;
-                                Vector3 tbn_bitangentP = Vector3.CrossProduct(tbn_tangentP, tbn_normalP).normalized;
-                                Matrix4x4 TBN = new Matrix4x4();
-                                TBN[1, 1] = tbn_tangentP.x; TBN[1, 2] = tbn_tangentP.y; TBN[1, 3] = tbn_tangentP.z;
-                                TBN[2, 1] = tbn_bitangentP.x; TBN[2, 2] = tbn_bitangentP.y; TBN[2, 3] = tbn_bitangentP.z;
-                                TBN[3, 1] = tbn_normalP.x; TBN[3, 2] = tbn_normalP.y; TBN[3, 3] = tbn_normalP.z;
-                                TBN[4, 4] = 1;
-
-                                reNormalizedTBN = TBN.reNormalized.transposed;
-
-                                Color normalColor = normalTex.GetPixel((int)(uvP.x * normalTex.Width), (int)((1 - uvP.y) * normalTex.Height));
-                                Vector3 tangentNormal = new Vector3(normalColor.R / 255f, normalColor.G / 255f, normalColor.B / 255f);
-                                Vector3 normal = (new Vector4(tangentNormal.x * 2.0f - 1.0f, tangentNormal.y * 2.0f - 1.0f, tangentNormal.z * 2.0f - 1.0f, 1) * reNormalizedTBN).transTo3D.normalized;
-                                Vector3 hP = hA + (hB - hA) * phi;
-                                float dot_nh = Math.Max(0, Vector3.DotProduct(normal, hP));
-
-                                float ity_diffuseP = Vector3.DotProduct(normal, light_dir);
-                                float ity_specularP = (float)Math.Pow(dot_nh, gloss);
-
-                                float intensity = (ity_diffuseP + ity_specularP) * 0.5f + 0.5f;
-                                int res = Math.Clamp(Convert.ToInt32(intensity * 255), 0, 255);
-                                color = Color.FromArgb(res, res, res);
-
                                 Color texColor = diffuseTex.GetPixel((int)Math.Floor(uvP.x * diffuseTex.Width), (int)Math.Floor((1 - uvP.y) * diffuseTex.Height));
                                 Color resColor = ColorProduct(color, texColor);
                                 resBitmap.SetPixel((int)P.x, (int)(canvas_height - P.y), resColor);
